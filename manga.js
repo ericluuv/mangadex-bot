@@ -129,7 +129,7 @@ async function updateMangaList(mangaId, method, pool) {
     },
     body: JSON.stringify(data)
   };
-
+  console.log('THE OPTIONS', options);
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
