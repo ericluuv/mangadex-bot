@@ -49,7 +49,7 @@ async function updateTokens(sessionToken, refreshToken, pool) {
   const now = Date.now();
   let temp = [];
   if (sessionToken !== '') {
-    let updateStr = `UPDATE dexTokens SET sessionToken = '${sessionToken}', sessionDate = ${now} WHERE daKey = 0`;
+    let updateStr = `UPDATE dex_tokens SET session_token = '${sessionToken}', session_date = ${now} WHERE da_key = 0`;
     temp.push(pool.query(updateStr, (err, res) => {
       if (err) { console.log(err); }
       console.log('Updated sessionToken in database.');
@@ -57,7 +57,7 @@ async function updateTokens(sessionToken, refreshToken, pool) {
   }
 
   if (refreshToken !== '') {
-    let updateStr = `UPDATE dexTokens SET refreshToken = '${refreshToken}', refreshDate = ${now} WHERE daKey = 0`;
+    let updateStr = `UPDATE dex_tokens SET refresh_token = '${refreshToken}', refresh_date = ${now} WHERE da_key = 0`;
     temp.push(pool.query(updateStr, (err, res) => {
       if (err) { console.log(err); }
       console.log('Updated refreshToken in database');
@@ -70,13 +70,12 @@ async function updateTokens(sessionToken, refreshToken, pool) {
 async function insertTokens(sessionToken, refreshToken, pool) {
   //Inserts tokens into the database, used when table is empty.
   const now = Date.now();
-  let insertStr = `INSERT INTO dexTokens VALUES (0, '${sessionToken}', '${refreshToken}', `;
+  let insertStr = `INSERT INTO dex_tokens VALUES (0, '${sessionToken}', '${refreshToken}', `;
   insertStr += `${now}, ${now});`;
   
-  console.log(`THE INSERT STR: ${insertStr}`);
   return pool.query(insertStr, (err1, res1) => {
     if (err1) { console.log(err1); }
-    console.log("Inserted new tokens into dexTokens");
+    console.log("Inserted new tokens into dex_tokens");
   });
 }
 
@@ -85,7 +84,7 @@ async function getSessionToken(pool) {
   //Grabs session token from database, populates the table if necessary.
   //Also refreshes the session token if its been > 14 minutes since last made
   //Refreshes refresh token if its been more than 1 month since last made
-  const result = await pool.query('SELECT * from dexTokens');
+  const result = await pool.query('SELECT * from dex_tokens');
   const rows = result.rows;
   if (rows.length === 0 || Date.now() - rows[0].refreshdate >= 1415600000) {
     // table is empty, or both tokens are unusable 
@@ -101,13 +100,13 @@ async function getSessionToken(pool) {
     //Just grab it fool, and check sessionDate
     if (Date.now() - rows[0].sessiondate >= 840000) {
       //Refresh
-      const refreshed = await refreshSession(rows[0].refreshtoken);
+      const refreshed = await refreshSession(rows[0].refresh_token);
       console.log('Refreshed token');
       const temp = await updateTokens(refreshed, '', pool);
     }
   }
-  return pool.query('SELECT * from dexTokens').then((res) => {
-    return res.rows[0].sessiontoken;
+  return pool.query('SELECT * from dex_tokens').then((res) => {
+    return res.rows[0].session_token;
   })
 }
 
