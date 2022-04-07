@@ -86,7 +86,7 @@ async function getSessionToken(pool) {
   //Refreshes refresh token if its been more than 1 month since last made
   const result = await pool.query('SELECT * from dex_tokens');
   const rows = result.rows;
-  if (rows.length === 0 || Date.now() - rows[0].refreshdate >= 1415600000) {
+  if (rows.length === 0 || Date.now() - rows[0].refresh_date >= 1415600000) {
     // table is empty, or both tokens are unusable 
     let tokens = await getDexTokens();
     if (rows.length === 0) {
@@ -98,7 +98,7 @@ async function getSessionToken(pool) {
   }
   else {
     //Just grab it fool, and check sessionDate
-    if (Date.now() - rows[0].sessiondate >= 840000) {
+    if (Date.now() - rows[0].session_date >= 840000) {
       //Refresh
       const refreshed = await refreshSession(rows[0].refresh_token);
       console.log('Refreshed token');
@@ -129,7 +129,7 @@ async function updateMangaList(mangaId, method, pool) {
     },
     body: JSON.stringify(data)
   };
-  console.log('THE OPTIONS', options);
+  
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') { console.log('add/deleteManga() successful'); }

@@ -60,7 +60,7 @@ bot.on('ready', () => {
 //Eric functions
 bot.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
-  /*
+  
   if (interaction.commandName === 'add' || interaction.commandName === 'delete') {
     const info = getTitleInfo(interaction.options);
     const mangaId = info[0];
@@ -86,8 +86,8 @@ bot.on('interactionCreate', async interaction => {
         content: `Error!`
       });
     }
-  }*/
-  
+  }
+  /*
 	if (interaction.commandName === 'add') {
     const info = getTitleInfo(interaction.options);
     const mangaId = info[0];
@@ -95,11 +95,12 @@ bot.on('interactionCreate', async interaction => {
     const res = await updateMangaList(mangaId, 'POST', pool);
     if (res.result === 'ok') { 
       await interaction.deferReply();
-      await interaction.reply({
+      await interaction.editReply({
         content: `Successfully added ${mangaTitle} <:dababy:827023206631866428>`
       });
     }
     else {
+      console.log('THE ERROR', res);
       await interaction.reply({
         content: `Error!`
       });
@@ -112,16 +113,17 @@ bot.on('interactionCreate', async interaction => {
     const res = await updateMangaList(mangaId, 'DELETE', pool);
     if (res.result === 'ok') {
       await interaction.deferReply();
-      await interaction.reply({
+      await interaction.editReply({
         content: `Successfully deleted ${mangaTitle}  <:dababy:827023206631866428>`
       });
     }
     else {
+      console.log('THE ERROR', res);
       await interaction.reply({
         content: `Error!`
       });
     }
-  }
+  }*/
 });
 
 
