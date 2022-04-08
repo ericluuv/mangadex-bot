@@ -10,7 +10,7 @@ bot.login(process.env.DISCORD_TOKEN);
 
 // request API
 const fetch = require('node-fetch');
-
+/*
 // postgreSQL API
 const { Pool, Client } = require('pg');
 const pool = new Pool({
@@ -123,9 +123,9 @@ bot.on('interactionCreate', async interaction => {
         content: `Error!`
       });
     }
-  }*/
+  }
 });
-
+*/
 
 
 
