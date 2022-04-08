@@ -40,14 +40,12 @@ pool.query(makeMangaTable, (err, res) => {
 const { getTitleInfo, updateMangaList } = require('./manga.js');
 
 
-bot.on('ready', () => {
-  let commands;
-  const guild = bot.guilds.cache.get(process.env.GUILD_ID);
-  if (guild) { commands = guild.commands; }
-  else { commands = bot.application?.commands; }
+bot.on('ready', async () => {
+  const commands = bot.guilds.cache.get(process.env.GUILD_ID).commands;
   commands.create(addCommand);
   commands.create(delCommand);
   console.log('Commands created');
+
 
   console.log("Mangadex-bot logged in");
   bot.user.setActivity('Doki Doki Literature Club', {type: 'PLAYING'});
@@ -103,4 +101,3 @@ const delCommand = new SlashCommandBuilder()
     return option.setName('url')
       .setDescription('The URL of the manga').setRequired(true);
   });
-
