@@ -41,7 +41,6 @@ const { getTitleInfo, updateMangaList } = require('./manga.js');
 
 
 bot.on('ready', () => {
-
   let commands;
   const guild = bot.guilds.cache.get(process.env.GUILD_ID);
   if (guild) { commands = guild.commands; }
@@ -85,47 +84,7 @@ bot.on('interactionCreate', async interaction => {
       });
     }
   }
-  /*
-	if (interaction.commandName === 'add') {
-    const info = getTitleInfo(interaction.options);
-    const mangaId = info[0];
-    const mangaTitle = info.length > 1 ? info[1] : 'Unknown';
-    const res = await updateMangaList(mangaId, 'POST', pool);
-    if (res.result === 'ok') { 
-      await interaction.deferReply();
-      await interaction.editReply({
-        content: `Successfully added ${mangaTitle} <:dababy:827023206631866428>`
-      });
-    }
-    else {
-      console.log('THE ERROR', res);
-      await interaction.reply({
-        content: `Error!`
-      });
-    }
-	}
-  if (interaction.commandName === 'delete') {
-    const info = getTitleInfo(interaction.options);
-    const mangaId = info[0];
-    const mangaTitle = info.length > 1 ? info[1] : 'Unknown';
-    const res = await updateMangaList(mangaId, 'DELETE', pool);
-    if (res.result === 'ok') {
-      await interaction.deferReply();
-      await interaction.editReply({
-        content: `Successfully deleted ${mangaTitle}  <:dababy:827023206631866428>`
-      });
-    }
-    else {
-      console.log('THE ERROR', res);
-      await interaction.reply({
-        content: `Error!`
-      });
-    }
-  }*/
 });
-
-
-
 
 
 
