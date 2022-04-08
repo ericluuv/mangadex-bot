@@ -73,7 +73,7 @@ bot.on('interactionCreate', async interaction => {
     if (res.result === 'ok') { 
       await interaction.deferReply();
       await interaction.editReply({
-        content: `Successfully ${verb} ${mangaTitle} <:dababy:827023206631866428>`
+        content: `Successfully ${verb} ${mangaTitle} :dababy:`
       });
     }
     else {
