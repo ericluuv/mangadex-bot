@@ -37,8 +37,6 @@ pool.query(makeMangaTable, (err, res) => {
 
 
 //MagnaDex Stuff
-const mangadex_url = "https://api.mangadex.org";
-const listId = 'a1c6b4c7-d6cc-4a82-97a7-506825bf81c4';
 const { getTitleInfo, updateMangaList } = require('./manga.js');
 
 
@@ -141,7 +139,7 @@ const addCommand = new SlashCommandBuilder()
 
 const delCommand = new SlashCommandBuilder()
   .setName('delete')
-  .setDescription('Adds manga to be deleted via URL.')
+  .setDescription('Removes manga from the tracking list via URL.')
   .addStringOption((option) => {
     return option.setName('url')
       .setDescription('The URL of the manga').setRequired(true);

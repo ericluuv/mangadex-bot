@@ -1,10 +1,9 @@
-const mangadex_url = "https://api.mangadex.org";
-const list_id = 'a1c6b4c7-d6cc-4a82-97a7-506825bf81c4';
+require('dotenv').config();
 const fetch = require('node-fetch'); 
 
 function getDexTokens() {
   //Logins in using Mangadex credentials.
-  const url = mangadex_url + '/auth/login';
+  const url = process.env.MANGADEX_URL + '/auth/login';
   const username = process.env.MANGA_USERNAME;
   const password = process.env.MANGA_PASSWORD;
   let data = { username: username, password: password };
@@ -26,7 +25,7 @@ function getDexTokens() {
 
 function refreshSession(refreshToken) {
   //Refreshes the session token using the refreshToken.
-  const url = mangadex_url + '/auth/refresh';
+  const url = process.env.MANGADEX_URL + '/auth/refresh';
   let data = { token: refreshToken };
   let options = {
     method: 'POST',
@@ -113,10 +112,10 @@ async function getSessionToken(pool) {
 
 async function updateMangaList(mangaId, method, pool) {
   //Adds or deletes manga from the mangaList via it's ID.
-  const url = mangadex_url + `/manga/${mangaId}/list/${list_id}`;
+  const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${process.env.LIST_ID}`;
   let data = {
     id: mangaId,
-    listId: list_id
+    listId: process.env.LIST_ID
   };
 
   const token = await getSessionToken(pool);
@@ -129,7 +128,7 @@ async function updateMangaList(mangaId, method, pool) {
     },
     body: JSON.stringify(data)
   };
-  
+
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
