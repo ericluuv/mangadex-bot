@@ -37,19 +37,53 @@ pool.query(makeMangaTable, (err, res) => {
 
 
 //MagnaDex Stuff
-const mangadex_url = "https://api.mangadex.org";
-const listId = 'a1c6b4c7-d6cc-4a82-97a7-506825bf81c4';
 const { getTitleInfo, updateMangaList } = require('./manga.js');
 
 
-bot.on('ready', async () => {
-  console.log("Mangadex-bot logged in");
-
+bot.on('ready', () => {
   let commands;
   const guild = bot.guilds.cache.get(process.env.GUILD_ID);
   if (guild) { commands = guild.commands; }
   else { commands = bot.application?.commands; }
+  commands.create(addCommand);
+  commands.create(delCommand);
+  console.log('Commands created');
 
+  console.log("Mangadex-bot logged in");
+  bot.user.setActivity('Doki Doki Literature Club', {type: 'PLAYING'});
+});
+
+
+//Eric functions
+bot.on('interactionCreate', async interaction => {
+	if (!interaction.isCommand()) return;
+  
+  if (interaction.commandName === 'add' || interaction.commandName === 'delete') {
+    const info = getTitleInfo(interaction.options);
+    const mangaId = info[0];
+    const mangaTitle = info.length > 1 ? info[1] : 'Unknown';
+    let verb, method;
+    if (interaction.commandName === 'add') {
+      verb = 'added';
+      method = 'POST';
+    }
+    else {
+      verb = 'deleted';
+      method = 'DELETE';
+    }
+    const res = await updateMangaList(mangaId, method, pool);
+    if (res.result === 'ok') { 
+      await interaction.deferReply();
+      await interaction.editReply({
+        content: `Successfully ${verb} ${mangaTitle} <:dababy:827023206631866428>`
+      });
+    }
+    else {
+      await interaction.reply({
+        content: `Error!`
+      });
+    }
+  }
 });
 
 
@@ -64,7 +98,7 @@ const addCommand = new SlashCommandBuilder()
 
 const delCommand = new SlashCommandBuilder()
   .setName('delete')
-  .setDescription('Adds manga to be deleted via URL.')
+  .setDescription('Removes manga from the tracking list via URL.')
   .addStringOption((option) => {
     return option.setName('url')
       .setDescription('The URL of the manga').setRequired(true);

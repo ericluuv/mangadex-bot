@@ -1,10 +1,9 @@
-const mangadex_url = "https://api.mangadex.org";
-const list_id = 'a1c6b4c7-d6cc-4a82-97a7-506825bf81c4';
+require('dotenv').config();
 const fetch = require('node-fetch'); 
 
 function getDexTokens() {
   //Logins in using Mangadex credentials.
-  const url = mangadex_url + '/auth/login';
+  const url = process.env.MANGADEX_URL + '/auth/login';
   const username = process.env.MANGA_USERNAME;
   const password = process.env.MANGA_PASSWORD;
   let data = { username: username, password: password };
@@ -26,7 +25,7 @@ function getDexTokens() {
 
 function refreshSession(refreshToken) {
   //Refreshes the session token using the refreshToken.
-  const url = mangadex_url + '/auth/refresh';
+  const url = process.env.MANGADEX_URL + '/auth/refresh';
   let data = { token: refreshToken };
   let options = {
     method: 'POST',
@@ -49,7 +48,7 @@ async function updateTokens(sessionToken, refreshToken, pool) {
   const now = Date.now();
   let temp = [];
   if (sessionToken !== '') {
-    let updateStr = `UPDATE dexTokens SET sessionToken = '${sessionToken}', sessionDate = ${now} WHERE daKey = 0`;
+    let updateStr = `UPDATE dex_tokens SET session_token = '${sessionToken}', session_date = ${now} WHERE da_key = 0`;
     temp.push(pool.query(updateStr, (err, res) => {
       if (err) { console.log(err); }
       console.log('Updated sessionToken in database.');
@@ -57,7 +56,7 @@ async function updateTokens(sessionToken, refreshToken, pool) {
   }
 
   if (refreshToken !== '') {
-    let updateStr = `UPDATE dexTokens SET refreshToken = '${refreshToken}', refreshDate = ${now} WHERE daKey = 0`;
+    let updateStr = `UPDATE dex_tokens SET refresh_token = '${refreshToken}', refresh_date = ${now} WHERE da_key = 0`;
     temp.push(pool.query(updateStr, (err, res) => {
       if (err) { console.log(err); }
       console.log('Updated refreshToken in database');
@@ -70,13 +69,12 @@ async function updateTokens(sessionToken, refreshToken, pool) {
 async function insertTokens(sessionToken, refreshToken, pool) {
   //Inserts tokens into the database, used when table is empty.
   const now = Date.now();
-  let insertStr = `INSERT INTO dexTokens VALUES (0, '${sessionToken}', '${refreshToken}', `;
+  let insertStr = `INSERT INTO dex_tokens VALUES (0, '${sessionToken}', '${refreshToken}', `;
   insertStr += `${now}, ${now});`;
   
-  console.log(`THE INSERT STR: ${insertStr}`);
   return pool.query(insertStr, (err1, res1) => {
     if (err1) { console.log(err1); }
-    console.log("Inserted new tokens into dexTokens");
+    console.log("Inserted new tokens into dex_tokens");
   });
 }
 
@@ -85,9 +83,9 @@ async function getSessionToken(pool) {
   //Grabs session token from database, populates the table if necessary.
   //Also refreshes the session token if its been > 14 minutes since last made
   //Refreshes refresh token if its been more than 1 month since last made
-  const result = await pool.query('SELECT * from dexTokens');
+  const result = await pool.query('SELECT * from dex_tokens');
   const rows = result.rows;
-  if (rows.length === 0 || Date.now() - rows[0].refreshdate >= 1415600000) {
+  if (rows.length === 0 || Date.now() - rows[0].refresh_date >= 1415600000) {
     // table is empty, or both tokens are unusable 
     let tokens = await getDexTokens();
     if (rows.length === 0) {
@@ -99,25 +97,25 @@ async function getSessionToken(pool) {
   }
   else {
     //Just grab it fool, and check sessionDate
-    if (Date.now() - rows[0].sessiondate >= 840000) {
+    if (Date.now() - rows[0].session_date >= 840000) {
       //Refresh
-      const refreshed = await refreshSession(rows[0].refreshtoken);
+      const refreshed = await refreshSession(rows[0].refresh_token);
       console.log('Refreshed token');
       const temp = await updateTokens(refreshed, '', pool);
     }
   }
-  return pool.query('SELECT * from dexTokens').then((res) => {
-    return res.rows[0].sessiontoken;
+  return pool.query('SELECT * from dex_tokens').then((res) => {
+    return res.rows[0].session_token;
   })
 }
 
 
 async function updateMangaList(mangaId, method, pool) {
   //Adds or deletes manga from the mangaList via it's ID.
-  const url = mangadex_url + `/manga/${mangaId}/list/${list_id}`;
+  const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${process.env.LIST_ID}`;
   let data = {
     id: mangaId,
-    listId: list_id
+    listId: process.env.LIST_ID
   };
 
   const token = await getSessionToken(pool);
