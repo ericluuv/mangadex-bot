@@ -34,10 +34,9 @@ pool.query(makeMangaTable, (err, res) => {
 });
 
 
-
-
 //MagnaDex Stuff
-const { getTitleInfo, updateMangaList } = require('./manga.js');
+const { getTitleInfo, updateMangaList, getMangaUpdates, processUpdates } = require('./manga.js');
+const { Channel } = require('discord.js');
 
 
 bot.on('ready', async () => {
@@ -46,20 +45,29 @@ bot.on('ready', async () => {
   commands.create(delCommand);
   console.log('Commands created');
 
-
   console.log("Mangadex-bot logged in");
-  bot.user.setActivity('Doki Doki Literature Club', {type: 'PLAYING'});
+  bot.user.setActivity('Doki Doki Literature Club', { type: 'PLAYING' });
+
+
+  setInterval(async () => {
+    const updates = await getMangaUpdates();
+    console.log(`The current updates: ${updates}`);
+    let channel = bot.channels.cache.get(process.env.CHANNEL_ID);
+    for (const toEmbed of (await processUpdates(updates))) {
+      channel.send(toEmbed);
+    }
+  }, 600000);
 });
 
 
 //Eric functions
 bot.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-  
+  if (!interaction.isCommand()) return;
+
   if (interaction.commandName === 'add' || interaction.commandName === 'delete') {
     const info = getTitleInfo(interaction.options);
     const mangaId = info[0];
-    const mangaTitle = info.length > 1 ? info[1] : 'Unknown';
+    const mangaTitle = info[1];
     let verb, method;
     if (interaction.commandName === 'add') {
       verb = 'added';
@@ -70,13 +78,14 @@ bot.on('interactionCreate', async interaction => {
       method = 'DELETE';
     }
     const res = await updateMangaList(mangaId, method, pool);
-    if (res.result === 'ok') { 
+    if (res.result === 'ok') {
       await interaction.deferReply();
       await interaction.editReply({
         content: `Successfully ${verb} ${mangaTitle} <:dababy:827023206631866428>`
       });
     }
     else {
+      console.log(`Failed: ${res}`);
       await interaction.reply({
         content: `Error!`
       });
