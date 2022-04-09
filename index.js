@@ -50,7 +50,7 @@ bot.on('ready', async () => {
 
   setInterval(async () => {
     const updates = await getMangaUpdates();
-    console.log(`The current updates: ${updates}`);
+    console.log('The current updates', updates);
     let channel = bot.channels.cache.get(process.env.CHANNEL_ID);
     for (const toEmbed of (await processUpdates(updates))) {
       channel.send(toEmbed);
