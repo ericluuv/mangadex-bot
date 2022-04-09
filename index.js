@@ -6,16 +6,21 @@ const Discord = require('discord.js');
 const { MessageAttachment, MessageEmbed } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PRESENCES"] });
-bot.login(process.env.DISCORD_TOKEN);
+bot.login(process.env.DISCORD_STAGING_TOKEN);
 
 // request API
 const fetch = require('node-fetch');
 
 // postgreSQL API
 const { Pool, Client } = require('pg');
+/*
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
+});*/
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_STAGING_URL
 });
 pool.connect().then(console.log('PostgreSQL connected.'));
 
@@ -34,10 +39,9 @@ pool.query(makeMangaTable, (err, res) => {
 });
 
 
-
-
 //MagnaDex Stuff
-const { getTitleInfo, updateMangaList } = require('./manga.js');
+const { getTitleInfo, updateMangaList, getMangaUpdates, processUpdates} = require('./manga.js');
+const { Channel } = require('discord.js');
 
 
 bot.on('ready', async () => {
@@ -46,9 +50,18 @@ bot.on('ready', async () => {
   commands.create(delCommand);
   console.log('Commands created');
 
-
   console.log("Mangadex-bot logged in");
   bot.user.setActivity('Doki Doki Literature Club', {type: 'PLAYING'});
+
+  
+  setInterval(async () => {
+    const updates = await getMangaUpdates();
+    console.log(`The current updates: ${updates}`);
+    let channel = bot.channels.cache.get(process.env.CHANNEL_ID);
+    for (const toEmbed of (await processUpdates(updates))) {
+      channel.send(toEmbed);
+    }
+  }, 600000);
 });
 
 
@@ -59,7 +72,7 @@ bot.on('interactionCreate', async interaction => {
   if (interaction.commandName === 'add' || interaction.commandName === 'delete') {
     const info = getTitleInfo(interaction.options);
     const mangaId = info[0];
-    const mangaTitle = info.length > 1 ? info[1] : 'Unknown';
+    const mangaTitle = info[1];
     let verb, method;
     if (interaction.commandName === 'add') {
       verb = 'added';
@@ -77,6 +90,7 @@ bot.on('interactionCreate', async interaction => {
       });
     }
     else {
+      console.log(`Failed: ${res}`);
       await interaction.reply({
         content: `Error!`
       });
