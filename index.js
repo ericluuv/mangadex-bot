@@ -55,7 +55,7 @@ bot.on('ready', async () => {
     for (const toEmbed of (await processUpdates(updates))) {
       channel.send(toEmbed);
     }
-  }, 600000);
+  }, 60000);
 });
 
 

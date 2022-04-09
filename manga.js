@@ -159,7 +159,7 @@ function getTitleInfo(intOptions) {
 
 function getMangaUpdates() {
   //Returns an array of all mangas that have been updated in the last 10 minutes.
-  const timeElasped = new Date(Date.now() - 600000).toISOString().split('.')[0];
+  const timeElasped = new Date(Date.now() - (600000*4)).toISOString().split('.')[0];
   let url = process.env.MANGADEX_URL + `/list/${process.env.LIST_ID}/feed`
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
     ;
