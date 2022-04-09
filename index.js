@@ -6,21 +6,16 @@ const Discord = require('discord.js');
 const { MessageAttachment, MessageEmbed } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PRESENCES"] });
-bot.login(process.env.DISCORD_STAGING_TOKEN);
+bot.login(process.env.DISCORD_OKEN);
 
 // request API
 const fetch = require('node-fetch');
 
 // postgreSQL API
 const { Pool, Client } = require('pg');
-/*
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
-});*/
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_STAGING_URL
 });
 pool.connect().then(console.log('PostgreSQL connected.'));
 
@@ -40,7 +35,7 @@ pool.query(makeMangaTable, (err, res) => {
 
 
 //MagnaDex Stuff
-const { getTitleInfo, updateMangaList, getMangaUpdates, processUpdates} = require('./manga.js');
+const { getTitleInfo, updateMangaList, getMangaUpdates, processUpdates } = require('./manga.js');
 const { Channel } = require('discord.js');
 
 
@@ -51,9 +46,9 @@ bot.on('ready', async () => {
   console.log('Commands created');
 
   console.log("Mangadex-bot logged in");
-  bot.user.setActivity('Doki Doki Literature Club', {type: 'PLAYING'});
+  bot.user.setActivity('Doki Doki Literature Club', { type: 'PLAYING' });
 
-  
+
   setInterval(async () => {
     const updates = await getMangaUpdates();
     console.log(`The current updates: ${updates}`);
@@ -67,8 +62,8 @@ bot.on('ready', async () => {
 
 //Eric functions
 bot.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-  
+  if (!interaction.isCommand()) return;
+
   if (interaction.commandName === 'add' || interaction.commandName === 'delete') {
     const info = getTitleInfo(interaction.options);
     const mangaId = info[0];
@@ -83,7 +78,7 @@ bot.on('interactionCreate', async interaction => {
       method = 'DELETE';
     }
     const res = await updateMangaList(mangaId, method, pool);
-    if (res.result === 'ok') { 
+    if (res.result === 'ok') {
       await interaction.deferReply();
       await interaction.editReply({
         content: `Successfully ${verb} ${mangaTitle} <:dababy:827023206631866428>`
