@@ -172,7 +172,7 @@ function getMangaUpdates() {
     const json = await res.json();
     if (json.result === 'ok') {
       return json.data.filter((value, index, self) => {
-        return self.indexOf(value) == index;
+        return self.indexOf(value) === index;
       });
     }
     else {
