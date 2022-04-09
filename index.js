@@ -36,7 +36,6 @@ pool.query(makeMangaTable, (err, res) => {
 
 //MagnaDex Stuff
 const { getTitleInfo, updateMangaList, getMangaUpdates, processUpdates } = require('./manga.js');
-const { Channel } = require('discord.js');
 
 
 bot.on('ready', async () => {

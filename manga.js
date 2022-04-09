@@ -171,6 +171,7 @@ function getMangaUpdates() {
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') {
+      console.log("THE RESULTS BEFORE FILTERING", json);
       return json.data.filter((value, index, self) => {
         return self.indexOf(value) === index;
       });
