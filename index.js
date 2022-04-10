@@ -59,7 +59,7 @@ async function pollUpdates(previousUrls, channel) {
       await channel.send(toEmbed);
     }
   }
-  setTimeout(function(){pollUpdates(newSet, channel)}, 30000);
+  setTimeout(function(){pollUpdates(newSet, channel)}, 600000);
 }
 
 
