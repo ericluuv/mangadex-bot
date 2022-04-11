@@ -46,10 +46,10 @@ function getTitleInfo(intOptions) {
 }
 
 
-function getMangaUpdates() {
+function getMangaUpdates(listId) {
   //Returns an array of all mangas that have been updated in the last 20 minutes.
   const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
-  let url = process.env.MANGADEX_URL + `/list/${process.env.LIST_ID}/feed`
+  let url = process.env.MANGADEX_URL + `/list/${listId}/feed`
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
     ;
   const options = {
@@ -216,9 +216,42 @@ async function processUpdates(updates) {
 }
 
 
+async function createList(listName) {
+  const url = `${process.env.MANGADEX_URL}/list`;
+  const bod = {
+    name: listName,
+    visibility: 'public'
+  };
+  const token = await getSessionToken();
+  console.log(`Some of bearer token: ${token.slice(0, 10)}`);
+  const options = {
+    method: 'POST',
+    body: JSON.stringify(bod),
+    headers: {
+      'Content-type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  };
+
+  return fetch(url, options).then(async (res) => {
+    const json = await res.json();
+    if (json.result === 'ok') {
+      console.log(`${listName} successfully created`);
+      return json.data.id;
+    }
+    else {
+      console.log(`${listName} could not be created.`, json);
+    }
+  }).catch((err) => {
+    console.log(err);
+  });
+}
+
+
 module.exports = {
   getTitleInfo,
   updateMangaList,
   getMangaUpdates,
-  processUpdates
+  processUpdates,
+  createList
 };

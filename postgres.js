@@ -104,7 +104,7 @@ async function updateTokens(sessionToken, refreshToken) {
   const now = Date.now();
   let temp = [];
   if (sessionToken !== '') {
-    let updateStr = `UPDATE dex_tokens SET session_token = '${sessionToken}', session_date = ${now} WHERE da_key = 0`;
+    let updateStr = `UPDATE dex_tokens SET session_token = '${sessionToken}', session_date = ${now} WHERE da_key = 0;`;
     temp.push(pool.query(updateStr, (err, res) => {
       if (err) { console.log(err); }
       console.log('Updated sessionToken in database');
@@ -112,13 +112,13 @@ async function updateTokens(sessionToken, refreshToken) {
   }
 
   if (refreshToken !== '') {
-    let updateStr = `UPDATE dex_tokens SET refresh_token = '${refreshToken}', refresh_date = ${now} WHERE da_key = 0`;
+    let updateStr = `UPDATE dex_tokens SET refresh_token = '${refreshToken}', refresh_date = ${now} WHERE da_key = 0;`;
     temp.push(pool.query(updateStr, (err, res) => {
       if (err) { console.log(err); }
       console.log('Updated refreshToken in database');
     }));
-    return Promise.all(temp);
   }
+  return Promise.all(temp);
 }
 
 
@@ -141,7 +141,7 @@ async function getSessionToken() {
     Also refreshes the session token if its been > 14 minutes since last made
     Refreshes refresh token if its been more than 1 month since last made
   */
-  const result = await pool.query('SELECT * from dex_tokens');
+  const result = await pool.query('SELECT * from dex_tokens;');
   const rows = result.rows;
   if (rows.length === 0 || Date.now() - rows[0].refresh_date >= 1415600000) {
     // table is empty, or both tokens are unusable 
@@ -162,12 +162,40 @@ async function getSessionToken() {
       await updateTokens(refreshed, '');
     }
   }
-  const res = await pool.query('SELECT * from dex_tokens');
+  const res = await pool.query('SELECT * from dex_tokens;');
   return res.rows[0].session_token;
 }
 
+function insertGuildRow(guildId, listId, channelId) {
+  const insertString = `INSERT INTO guilds VALUES('${guildId}', '${listId}', '${channelId}');`;
+  pool.query(insertString, (err, res) => {
+    if (err) { console.log(err); }
+    else { console.log(`Insertion of ${guildId}, ${listId}, ${channelId} successful`); }
+  });
+}
+
+async function updateChannelId(guildId, channelId) {
+  const updateString = `UPDATE guilds SET channel_id = '${channelId}' WHERE guild_id = '${guildId}';`;
+  pool.query(updateString, (err, res) => {
+    if (err) { console.log(err); }
+    else { console.log(`Update of ${guildId}, ${channelId} successful`); }
+  });
+}
+
+
+async function getGuildTable() {
+  const selectString = `SELECT * FROM guilds;`;
+  return (await pool.query(selectString))?.rows || [];
+}
+
+
+
+
 module.exports = {
   createTables,
-  getSessionToken
+  getSessionToken,
+  insertGuildRow,
+  updateChannelId,
+  getGuildTable
 };
 

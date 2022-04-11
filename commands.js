@@ -4,6 +4,8 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 
 const { updateMangaList, getTitleInfo } = require('./manga.js');
 
+const { updateChannelId } = require('./postgres.js');
+
 const followCommand = new SlashCommandBuilder()
   .setName('follow')
   .setDescription('Follows manga via URL.')
@@ -98,6 +100,16 @@ async function handleFollowCommand(interaction) {
       content: `Error!`
     });
   }
+}
+
+async function handleSetCommand(interaction) {
+  await interaction.deferReply();
+  const channelId = interaction.channel.id;
+  const guildId = interaction.guild.id;
+  updateChannelId(guildId, channelId);
+  await interaction.editReply({
+    content: `Manga updates will now be sent to this channel`
+  });
 }
 
 module.exports = {
