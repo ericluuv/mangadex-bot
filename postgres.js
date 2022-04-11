@@ -37,22 +37,22 @@ const makeFollowsTable = 'CREATE TABLE IF NOT EXISTS follows ( \
 
 async function createTables() {
   //Makes all tables if they don't exist for postgresql.
-  await pool.connect().then(console.log('PostgreSQL connected.'));
+  const promises = [
+    pool.connect().then(console.log('PostgreSQL connected.')),
 
-  pool.query(makeTokensTable, (err, res) => {
-    if (err) { console.log(err); }
-    else { console.log('dex_tokens table made successfully'); }
-  });
+    pool.query(makeTokensTable)
+      .then(console.log('dex_tokens table made successfully'))
+      .catch(err => console.log(err)),
 
-  pool.query(makeGuildsTable, (err, res) => {
-    if (err) { console.log(err); }
-    else { console.log('guilds table made successfully'); }
-  });
+    pool.query(makeGuildsTable)
+      .then(console.log('guilds table made successfully'))
+      .catch(err => console.log(err)),
 
-  pool.query(makeFollowsTable, (err, res) => {
-    if (err) { console.log(err); }
-    else { console.log('follows table made successfully'); }
-  });
+    pool.query(makeFollowsTable)
+      .then(console.log('follows table made successfully'))
+      .catch(err => console.log(err)),
+  ];
+  await Promise.all(promises);
 }
 
 function getDexTokens() {
@@ -71,10 +71,7 @@ function getDexTokens() {
     const json = await res.json();
     if (json.result === 'ok') { return json.token; }
     console.log('getDexTokens() failed.', json);
-  }).catch((err) => {
-    console.log(err);
-    return;
-  });
+  }).catch(err => console.log(err));
 }
 
 
@@ -92,10 +89,7 @@ function refreshSession(refreshToken) {
     const json = await res.json();
     if (json.result === 'ok') { return json.token.session; }
     console.log('refreshSession() failed.', json);
-  }).catch((err) => {
-    console.log(err);
-    return;
-  });
+  }).catch(err => console.log(err));
 }
 
 
@@ -105,18 +99,24 @@ async function updateTokens(sessionToken, refreshToken) {
   let temp = [];
   if (sessionToken !== '') {
     let updateStr = `UPDATE dex_tokens SET session_token = '${sessionToken}', session_date = ${now} WHERE da_key = 0;`;
-    temp.push(pool.query(updateStr, (err, res) => {
-      if (err) { console.log(err); }
-      console.log('Updated sessionToken in database');
-    }));
+    const upd1 = pool.query(updateStr).then(res => {
+      if (res?.rowCount === 1) {
+        console.log('Updated sessionToken in database');
+      }
+      else { console.log('SessionToken not in db'); }
+    }).catch(err => console.log(err));
+    temp.push(upd1);
   }
 
   if (refreshToken !== '') {
     let updateStr = `UPDATE dex_tokens SET refresh_token = '${refreshToken}', refresh_date = ${now} WHERE da_key = 0;`;
-    temp.push(pool.query(updateStr, (err, res) => {
-      if (err) { console.log(err); }
-      console.log('Updated refreshToken in database');
-    }));
+    const upd2 = pool.query(updateStr).then(res => {
+      if (res?.rowCount === 1) {
+        console.log('Updated refreshToken in database');
+      }
+      else { console.log('RefreshToken not in db'); }
+    }).catch(err => console.log(err));
+    temp.push(upd2);
   }
   return Promise.all(temp);
 }
@@ -128,10 +128,13 @@ async function insertTokens(sessionToken, refreshToken) {
   let insertStr = `INSERT INTO dex_tokens VALUES (0, '${sessionToken}', '${refreshToken}', `;
   insertStr += `${now}, ${now});`;
 
-  return pool.query(insertStr, (err1, res1) => {
-    if (err1) { console.log(err1); }
-    console.log("Inserted new tokens into dex_tokens");
-  });
+  return pool.query(insertStr)
+    .then(res => {
+      if (res?.rowCount === 1) {
+        console.log('Inserted new tokens into dex_tokens');
+      }
+      else { console.log('No insertion'); }
+    }).catch(err => console.log(err));
 }
 
 
@@ -147,10 +150,10 @@ async function getSessionToken() {
     // table is empty, or both tokens are unusable 
     let tokens = await getDexTokens();
     if (rows.length === 0) {
-      await insertTokens(tokens.session, tokens.refresh);
+      await insertTokens(tokens?.session, tokens?.refresh);
     }
     else {
-      await updateTokens(tokens.session, tokens.refresh);
+      await updateTokens(tokens?.session, tokens?.refresh);
     }
   }
   else {
@@ -167,27 +170,77 @@ async function getSessionToken() {
 }
 
 function insertGuildRow(guildId, listId, channelId) {
+  //Inserts a new row into guilds table.
   const insertString = `INSERT INTO guilds VALUES('${guildId}', '${listId}', '${channelId}');`;
-  pool.query(insertString, (err, res) => {
-    if (err) { console.log(err); }
-    else { console.log(`Insertion of ${guildId}, ${listId}, ${channelId} successful`); }
-  });
+  return pool.query(insertString).then(res => {
+    if (res?.rowCount === 1) {
+      console.log(`Insertion of ${guildId}, ${listId}, ${channelId} successful`);
+    }
+    else { console.log(`No insertion of ${guildId}', '${listId}', '${channelId}`); }
+  }).catch(err => console.log(err));
 }
 
 async function updateChannelId(guildId, channelId) {
+  //Updates channelId based on guildId and channelId.
   const updateString = `UPDATE guilds SET channel_id = '${channelId}' WHERE guild_id = '${guildId}';`;
-  pool.query(updateString, (err, res) => {
-    if (err) { console.log(err); }
-    else { console.log(`Update of ${guildId}, ${channelId} successful`); }
+  return pool.query(updateString).then(res => {
+    if (res?.rowCount === 1) {
+      console.log(`Update of ${guildId}, ${channelId} successful`);
+    }
+    else { console.log(`No update of ${guildId}', '${channelId}`); }
+  }).catch(err => console.log(err));
+}
+
+
+function getGuildTable() {
+  //Returns the guilds table with all its rows.
+  const selectString = `SELECT * FROM guilds;`;
+  return pool.query(selectString).then(res => res?.rows).catch(err => {
+    console.log(err);
+    return [];
+  });
+}
+
+function getGuildRow(guildId) {
+  //Returns row with corresponding guildId.
+  const selectString = `SELECT * FROM guilds WHERE guild_id = '${guildId}';`;
+  return pool.query(selectString).then(res => { return res.rows; })
+  .catch(err => {
+    console.log(err);
+    return [];
   });
 }
 
 
-async function getGuildTable() {
-  const selectString = `SELECT * FROM guilds;`;
-  return (await pool.query(selectString))?.rows || [];
+async function insertFollow(userId, mangaId, guildId) {
+  //Returns true if a new follow was added, false if not.
+  const checkString = `SELECT * FROM follows WHERE user_id = '${userId}' AND 
+  manga_id = '${mangaId}' AND guild_id = '${guildId}';`;
+  const insertString = `INSERT INTO follows VALUES ('${userId}', '${mangaId}', '${guildId}');`;
+
+  const len = await pool.query(checkString).then(res => res?.rowCount);
+  if (len === 0) {
+    const status = await pool.query(insertString).then(res => res?.rowCount);
+    if (status == 1) { return true; }
+  }
+  else {
+    return false;
+  }
 }
 
+function delFollow(userId, mangaId, guildId) {
+  //Deletes the specified row from the follows table;
+  const deleteString = `DELETE FROM follows WHERE user_id = '${userId}' AND
+  manga_id = '${mangaId}' AND guild_id = '${guildId}';`;
+  return pool.query(deleteString).then(res => res?.rowCount)
+  .catch(err => console.log(err));
+}
+
+function getMangaCount(mangaId) {
+  const countString = `SELECT COUNT(*) FROM follows WHERE manga_id = '${mangaId}';`;
+  return pool.query(countString).then(res => res?.rows?.[0]?.count)
+  .catch(err => console.log(err));
+}
 
 
 
@@ -196,6 +249,8 @@ module.exports = {
   getSessionToken,
   insertGuildRow,
   updateChannelId,
-  getGuildTable
+  getGuildTable,
+  getGuildRow,
+  insertFollow,
+  delFollow
 };
-

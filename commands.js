@@ -4,7 +4,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 
 const { updateMangaList, getTitleInfo } = require('./manga.js');
 
-const { updateChannelId } = require('./postgres.js');
+const { insertFollow, delFollow, getGuildRow } = require('./postgres.js');
 
 const followCommand = new SlashCommandBuilder()
   .setName('follow')
@@ -46,15 +46,13 @@ async function getCurrentCommands() {
   };
   const response = await fetch(global_url, options);
   const json = await response.json();
-  const toReturn = new Set();
-  for (const command of json) { toReturn.add(command.name); }
-  return toReturn;
+  return json.map((command) => { return command.name; });
 }
 
 async function createCommands() {
   const currents = await getCurrentCommands();
   for (const command of commands) {
-    if (currents.has(command.name)) { continue; }
+    if (currents.includes(command.name)) { continue; }
     const options = {
       method: 'POST',
       body: JSON.stringify(command.toJSON()),
@@ -69,7 +67,7 @@ async function createCommands() {
   console.log('Commands created');
 }
 
-async function handleFollowCommand(interaction) {
+async function handleAddCommand(interaction) {
   const info = getTitleInfo(interaction.options);
   const mangaId = info[0];
   const mangaTitle = info[1];
@@ -102,18 +100,60 @@ async function handleFollowCommand(interaction) {
   }
 }
 
-async function handleSetCommand(interaction) {
+
+async function handleFollowCommand(interaction) {
   await interaction.deferReply();
-  const channelId = interaction.channel.id;
+  const info = getTitleInfo(interaction.options);
+  const userId = interaction.user.id;
+  const mangaId = info[0];
+  const mangaTitle = info[1];
   const guildId = interaction.guild.id;
-  updateChannelId(guildId, channelId);
-  await interaction.editReply({
-    content: `Manga updates will now be sent to this channel`
-  });
+  const listId = (await getGuildRow(guildId))[0]?.list_id;
+  if (mangaId === '') {
+    await interaction.editReply({content: 'Invalid URL.'});
+    return;
+  }
+
+  const status = await updateMangaList(mangaId, listId, 'POST');
+  if (status !== 'ok') { 
+    await interaction.editReply({content: 'Mangadex API error with the list.'});
+  }
+  else {
+    const res = await insertFollow(userId, mangaId, guildId);
+    if (res) { 
+      await interaction.editReply({content: `Now following ${mangaTitle}`});
+    }
+    else {
+      await interaction.editReply({content: `Already following ${mangaTitle}`});
+    }
+  }
 }
+
+async function handleUnfollowCommand(interaction) {
+  await interaction.deferReply();
+  const info = getTitleInfo(interaction.options);
+  const userId = interaction.user.id;
+  const mangaId = info[0];
+  const mangaTitle = info[1];
+  const guildId = interaction.guild.id;
+
+  if (mangaId === '') { 
+    await interaction.editReply({content: `URL was invalid.`});
+    return;
+  }
+  const count = await delFollow(userId, mangaId, guildId);
+  if (count === 0) { 
+    await interaction.editReply({content: `Wasn't even following ${mangaTitle}`});
+  }
+  else {
+    await interaction.editReply({content: `No longer following ${mangaTitle}`});
+  }
+}
+
 
 module.exports = {
   createCommands,
-  handleFollowCommand
+  handleFollowCommand,
+  handleUnfollowCommand
 };
 

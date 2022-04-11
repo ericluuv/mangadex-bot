@@ -2,13 +2,9 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { getSessionToken } = require('./postgres.js');
 
-async function updateMangaList(mangaId, method) {
+async function updateMangaList(mangaId, listId, method) {
   //Adds or deletes manga from the mangaList via it's ID.
-  const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${process.env.LIST_ID}`;
-  let data = {
-    id: mangaId,
-    listId: process.env.LIST_ID
-  };
+  const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${listId}`;
 
   const token = await getSessionToken();
   console.log(`Some of bearer token: ${token.slice(0, 10)}`);
@@ -17,18 +13,16 @@ async function updateMangaList(mangaId, method) {
     headers: {
       'Content-type': 'application/json',
       'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
+    }
   };
 
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
-    else { console.log(`add/deleteManga() unsuccessful`) };
-    return json;
+    else { console.log('add/deleteManga() unsuccessful', json) };
+    return json.result;
   }).catch((err) => {
     console.log(err);
-    return;
   });
 }
 
@@ -37,8 +31,8 @@ function getTitleInfo(intOptions) {
   // Get mangaID and title from the URL, returns empty string if invalid URL.
   const input = intOptions.getString('url');
   if (input.slice(0, 27) !== 'https://mangadex.org/title/') {
-    console.log('Invalid URL');
-    return '';
+    console.log('Invalid URL', input);
+    return ['', ''];
   }
   const toReturn = input.slice(27).split('/');
   toReturn[1] = toReturn.length > 1 ? toReturn[1].split('-').join(' ') : 'Unknown';

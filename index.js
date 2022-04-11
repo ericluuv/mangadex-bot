@@ -11,7 +11,7 @@ bot.login(process.env.DISCORD_STAGING_TOKEN);
 const fetch = require('node-fetch');
 
 //Commands
-const { createCommands, handleFollowCommand } = require('./commands.js')
+const { createCommands, handleFollowCommand, handleUnfollowCommand } = require('./commands.js')
 
 // postgreSQL 
 const { createTables, getGuildTable, updateChannelId, insertGuildRow } = require('./postgres.js');
@@ -51,20 +51,24 @@ bot.on('ready', async () => {
 
 bot.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
+  const guildId = interaction.guild.id;
+  const channelId = interaction.channel.id;
 
-  if (interaction.commandName === 'add' || interaction.commandName === 'delete') {
+  if (interaction.commandName === 'follow') {
     await handleFollowCommand(interaction);
+  }
+
+  else if (interaction.commandName === 'unfollow') {
+    await handleUnfollowCommand(interaction);
   }
 
   else if (interaction.commandName === 'set') {
     //Had to handle command here to avoid circular dependency.
     await interaction.deferReply();
-    const guildId = interaction.guild.id;
-    const channelId = interaction.channel.id;
     const guilds = (await getGuildTable()).map((elem) => {
       return elem.guild_id;
     });
-    console.log(guildId, channelId, guilds);
+    console.log('curr guildId, channelIds, and all guilds', guildId, channelId, guilds);
     if (guilds.includes(guildId)) {
       await updateChannelId(guildId, channelId);
     }
