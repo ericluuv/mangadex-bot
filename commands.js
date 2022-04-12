@@ -6,7 +6,7 @@ const { updateMangaList, getTitleInfo, createList, getMangaEmbeds } = require('.
 
 const { 
   insertFollow, delFollow, getGuildRow, getMangaCount,
-  updateChannelId, insertGuildRow, getFollowedMangas
+  updateChannelId, insertGuildRow, getFollowedMangas, getGuildTable
 } = require('./postgres.js');
 
 const followCommand = new SlashCommandBuilder()
@@ -150,9 +150,9 @@ async function handleSetCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
   const channelId = interaction.channel.id;
-  const guildCheck = await checkGuild(guildId);
-
-  if (guildCheck) {
+  const guilds = await getGuildTable();
+  
+  if (guilds.includes(guildId)) {
     await updateChannelId(guildId, channelId);
   }
   else {
