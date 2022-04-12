@@ -279,7 +279,7 @@ async function getMangaEmbeds(mangaIds) {
   });
 }
 
-function getMangaIdsFromList(listId) {
+async function getMangaIdsFromList(listId) {
   //Gets all mangaIds from a listId.
   const url = process.env.MANGADEX_URL + `/list/${listId}`;
   let options = {
@@ -287,6 +287,7 @@ function getMangaIdsFromList(listId) {
     headers: { 'Content-type': 'application/json' }
   };
 
+  /*
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') { 
@@ -296,7 +297,14 @@ function getMangaIdsFromList(listId) {
     return json?.data?.relationships.filter(rel => rel.type === 'manga').map(rel => rel.id) || [];
   }).catch((err) => {
     console.log(err);
-  });
+  });*/
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { 
+    console.log('getList() successful');
+  }
+  else { console.log('getList() unsuccessful', json) };
+  return json?.data?.relationships.filter(rel => rel.type === 'manga').map(rel => rel.id) || [];
 }
 
 
