@@ -35,7 +35,7 @@ const listMangaCommands = new SlashCommandBuilder()
   .setDescription('Lists manga the user is currently folllowing')
   ;
 
-const migrateCommand = newSlashCommandBUilder()
+const migrateCommand = new SlashCommandBuilder()
   .setName('migrate')
   .setDescription('Migrates a public list of mangas to the server list.')
   .addStringOption((option) => {
@@ -158,7 +158,7 @@ async function handleSetCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
   const channelId = interaction.channel.id;
-  const guilds = await getGuildTable();
+  const guilds = (await getGuildTable()).map(row => row.guild_id);
 
   if (guilds.includes(guildId)) {
     await updateChannelId(guildId, channelId);
