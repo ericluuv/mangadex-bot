@@ -158,8 +158,8 @@ function getTitleInfo(intOptions) {
 
 
 function getMangaUpdates() {
-  //Returns an array of all mangas that have been updated in the last 10 minutes.
-  const timeElasped = new Date(Date.now() - 600000).toISOString().split('.')[0];
+  //Returns an array of all mangas that have been updated in the last 20 minutes.
+  const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
   let url = process.env.MANGADEX_URL + `/list/${process.env.LIST_ID}/feed`
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
     ;
@@ -167,13 +167,22 @@ function getMangaUpdates() {
     method: 'GET',
     headers: { 'Content-type': 'application/json' }
   };
-  
+
   return fetch(url, options).then(async (res) => {
     const json = await res.json();
     if (json.result === 'ok') {
-      return json.data.filter((value, index, self) => {
-        return self.indexOf(value) === index;
-      });
+      const toReturn = []
+      const uniques = new Set();
+      for (const update of json.data) {
+        if (!uniques.has(update.id)) {
+          uniques.add(update.id);
+          toReturn.push(update);
+        }
+      }
+      for (const c of toReturn) {
+        console.log('Returned data items', c);
+      }
+      return toReturn;
     }
     else {
       console.log('getMangaUpdates() failed.', json);
@@ -194,7 +203,7 @@ function getRelId(relationships, type) {
 
 function getScanGroup(update) {
   //Grabs scanlation group name from relationships attribute, null if no value.
-  const id = getRelId(update?.data[0]?.relationships, 'scanlation_group');
+  const id = getRelId(update?.relationships, 'scanlation_group');
   if (id === '') {
     console.log('No suitable id found in getScanGroup', update);
     return;
@@ -217,7 +226,7 @@ function getScanGroup(update) {
 
 async function getMangaData(update) {
   //Gets mangaData from update.
-  const id = getRelId(update?.data[0]?.relationships, 'manga');
+  const id = getRelId(update?.relationships, 'manga');
   if (id === '') {
     console.log('No suitable id found in getMangaData', update);
     return;
@@ -292,19 +301,19 @@ async function processUpdates(updates) {
     const scanGroup = (await getScanGroup(update)) || '';
     const authorName = (await getAuthorName(mangaData)) || '';
     const coverFileName = await getCoverFileName(mangaData);
-    const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData.id}/${coverFileName}`;
-    const chapter = update.data[0]?.attributes?.chapter || '?';
+    const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
+    const chapter = update?.attributes?.chapter || '?';
     const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
-    const chapterTitle = update.data[0]?.attributes?.title || '';
+    const chapterTitle = update?.attributes?.title || '';
     const embed = {
       'embeds': [{
-          'title': `Ch ${chapter} - ${mangaTitle}`,
-          'description': `${chapterTitle}\nAuthor: ${authorName}\nGroup: ${scanGroup}`,
-          'color': 16742144,
-          'footer': { 'text': 'That New New' },
-          'url': `https://mangadex.org/chapter/${update.data[0]?.id}`,
-          'timestamp': update.data[0]?.attributes?.createdAt,
-          'thumbnail': { 'url': thumbnailUrl }
+        'title': `Ch ${chapter} - ${mangaTitle}`,
+        'description': `${chapterTitle}\nAuthor: ${authorName}\nGroup: ${scanGroup}`,
+        'color': 16742144,
+        'footer': { 'text': 'That New New' },
+        'url': `https://mangadex.org/chapter/${update?.id}`,
+        'timestamp': update?.attributes?.createdAt,
+        'thumbnail': { 'url': thumbnailUrl }
       }]
     };
     toReturn.push(embed);
