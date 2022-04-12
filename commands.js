@@ -202,7 +202,9 @@ async function handleMigrateCommand(interaction) {
 
   const listInfo = getListId(interaction.options);
   const listId = listInfo[0];
+  console.log('the listId', listId);
   const mangaIds = await getMangaIdsFromList(listId);
+  console.log('the mangaIds', mangaIds);
   await interaction.editReply({content: `Migrating ${mangaIds.length} to server list.`});
   await getSessionToken(); // So all the upcoming requests have an updated token.
   await Promise.all(mangaIds.map(mangaId => {
