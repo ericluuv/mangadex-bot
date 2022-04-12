@@ -252,5 +252,6 @@ module.exports = {
   getGuildTable,
   getGuildRow,
   insertFollow,
-  delFollow
+  delFollow,
+  getMangaCount
 };

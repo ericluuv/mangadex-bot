@@ -186,8 +186,8 @@ async function processUpdates(updates) {
   const toReturn = [];
   for (const update of updates) {
     const mangaData = await getMangaData(update);
-    const scanGroup = (await getScanGroup(update)) || '';
-    const authorName = (await getAuthorName(mangaData)) || '';
+    const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
+    const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
     const coverFileName = await getCoverFileName(mangaData);
     const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
     const chapter = update?.attributes?.chapter || '?';

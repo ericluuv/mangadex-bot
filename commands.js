@@ -2,9 +2,12 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const { updateMangaList, getTitleInfo } = require('./manga.js');
+const { updateMangaList, getTitleInfo, createList } = require('./manga.js');
 
-const { insertFollow, delFollow, getGuildRow } = require('./postgres.js');
+const { 
+  insertFollow, delFollow, getGuildRow, getMangaCount, getGuildTable,
+  updateChannelId, insertGuildRow
+} = require('./postgres.js');
 
 const followCommand = new SlashCommandBuilder()
   .setName('follow')
@@ -36,7 +39,7 @@ const commands = [followCommand, unfollowCommand, setChannelCommands, listMangaC
 
 const global_url = `https://discord.com/api/v8/applications/${process.env.APPLICATION_STAGING_ID}/commands`;
 
-async function getCurrentCommands() {
+function getCurrentCommands() {
   const options = {
     method: 'GET',
     headers: {
@@ -44,9 +47,12 @@ async function getCurrentCommands() {
       'Content-Type': 'application/json'
     }
   };
-  const response = await fetch(global_url, options);
-  const json = await response.json();
-  return json.map((command) => { return command.name; });
+
+  return fetch(global_url, options).then(async res => {
+    const json = await res.json();
+    return json.map(command => command.name);
+  })
+  .catch(err => console.log(err));
 }
 
 async function createCommands() {
@@ -146,14 +152,40 @@ async function handleUnfollowCommand(interaction) {
     await interaction.editReply({content: `Wasn't even following ${mangaTitle}`});
   }
   else {
+    const mangaCount = await getMangaCount(mangaId);
+    console.log('THE MANGA COUNT', mangaCount);
+    if (mangaCount === '0') {
+      const listId = (await getGuildRow(guildId))?.[0]?.list_id;
+      await updateMangaList(mangaId, listId, 'DELETE');
+      console.log(`${mangaTitle} was deleted from list: ${listId}`);
+    }
     await interaction.editReply({content: `No longer following ${mangaTitle}`});
   }
+}
+
+async function handleSetCommand(interaction) {
+  await interaction.deferReply();
+  const guildId = interaction.guild.id;
+  const channelId = interaction.channel.id;
+  const guilds = (await getGuildTable()).map((elem) => {
+    return elem.guild_id;
+  });
+  console.log('curr guildId, channelIds, and all guilds', guildId, channelId, guilds);
+
+  if (guilds.includes(guildId)) {
+    await updateChannelId(guildId, channelId);
+  }
+  else {
+    const listId = await createList('botList' + 1);
+    if (typeof(listId) != 'undefined') { insertGuildRow(guildId, listId, channelId); }
+  }
+  await interaction.editReply({content: 'Channel Successfuly Set'});
 }
 
 
 module.exports = {
   createCommands,
   handleFollowCommand,
-  handleUnfollowCommand
+  handleUnfollowCommand,
+  handleSetCommand
 };
-

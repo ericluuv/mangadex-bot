@@ -11,22 +11,24 @@ bot.login(process.env.DISCORD_STAGING_TOKEN);
 const fetch = require('node-fetch');
 
 //Commands
-const { createCommands, handleFollowCommand, handleUnfollowCommand } = require('./commands.js')
+const { createCommands, handleFollowCommand, handleUnfollowCommand, handleSetCommand } = require('./commands.js')
 
 // postgreSQL 
-const { createTables, getGuildTable, updateChannelId, insertGuildRow } = require('./postgres.js');
+const { createTables, getGuildTable } = require('./postgres.js');
 
 //MagnaDex Stuff
-const { getMangaUpdates, processUpdates, createList } = require('./manga.js');
+const { getMangaUpdates, processUpdates } = require('./manga.js');
 
 
 async function pollUpdates(previousUrls) {
   //Continuously checks for updates every 10 minutes and sends them out.
-  for (const row of (await getGuildTable())) {
+  const guildTable = await getGuildTable();
+  for (const row of guildTable) {
     const listId = row.list_id, channelId = row.channel_id;
     const updates = await getMangaUpdates(listId);
     console.log(`Num of updates: ${updates.length}`);
     const newSet = new Set();
+
     for (const toEmbed of (await processUpdates(updates))) {
       if (!previousUrls.has(toEmbed.embeds[0].url)) {
         newSet.add(toEmbed.embeds[0].url);
@@ -39,8 +41,7 @@ async function pollUpdates(previousUrls) {
 
 
 bot.on('ready', async () => {
-  await createCommands();
-  await createTables();
+  await Promise.all([createCommands(), createTables()]);
 
   console.log("Mangadex-bot logged in");
   bot.user.setActivity('Doki Doki Literature Club', { type: 'PLAYING' });
@@ -51,8 +52,6 @@ bot.on('ready', async () => {
 
 bot.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
-  const guildId = interaction.guild.id;
-  const channelId = interaction.channel.id;
 
   if (interaction.commandName === 'follow') {
     await handleFollowCommand(interaction);
@@ -63,25 +62,11 @@ bot.on('interactionCreate', async interaction => {
   }
 
   else if (interaction.commandName === 'set') {
-    //Had to handle command here to avoid circular dependency.
-    await interaction.deferReply();
-    const guilds = (await getGuildTable()).map((elem) => {
-      return elem.guild_id;
-    });
-    console.log('curr guildId, channelIds, and all guilds', guildId, channelId, guilds);
-    if (guilds.includes(guildId)) {
-      await updateChannelId(guildId, channelId);
-    }
-    else {
-      const listId = await createList('botList' + 1);
-      if (typeof(listId) != 'undefined') { insertGuildRow(guildId, listId, channelId); }
-    }
-    await interaction.editReply({content: 'Channel Successfuly Set'});
+    await handleSetCommand(interaction);
   }
 
   else if (interaction.commandName === 'list') {
-
+    
   }
-
 });
 
