@@ -293,7 +293,7 @@ function getMangaIdsFromList(listId) {
       console.log('getList() successful');
     }
     else { console.log('getList() unsuccessful', json) };
-    return json?.data?.relationships.filter(rel => rel.type === 'manga') || [];
+    return json?.data?.relationships.filter(rel => rel.type === 'manga').map(rel => rel.id) || [];
   }).catch((err) => {
     console.log(err);
   });

@@ -2,10 +2,13 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const { updateMangaList, getTitleInfo, createList, getMangaEmbeds, getMangaIdsFromList, getListId } = require('./manga.js');
+const { 
+  updateMangaList, getTitleInfo, createList, getMangaEmbeds, 
+  getMangaIdsFromList, getListId
+} = require('./manga.js');
 
 const {
-  insertFollow, delFollow, getGuildRow, getMangaCount,
+  insertFollow, delFollow, getGuildRow, getMangaCount, getSessionToken,
   updateChannelId, insertGuildRow, getFollowedMangas, getGuildTable
 } = require('./postgres.js');
 
@@ -201,6 +204,7 @@ async function handleMigrateCommand(interaction) {
   const listId = listInfo[0];
   const mangaIds = await getMangaIdsFromList(listId);
   await interaction.editReply({content: `Migrating ${mangaIds.length} to server list.`});
+  await getSessionToken(); // So all the upcoming requests have an updated token.
   await Promise.all(mangaIds.map(mangaId => {
     return updateMangaList(mangaId, listId, 'POST')
   }));
