@@ -5,7 +5,6 @@ const { getSessionToken } = require('./postgres.js');
 async function updateMangaList(mangaId, listId, method) {
   //Adds or deletes manga from the mangaList via it's ID.
   const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${listId}`;
-
   const token = await getSessionToken();
   console.log(`Some of bearer token: ${token.slice(0, 10)}`);
   let options = {
@@ -110,14 +109,15 @@ function getScanGroup(update) {
 }
 
 
-async function getMangaData(update) {
+async function getMangaData(update, id = '') {
   //Gets mangaData from update.
-  const id = getRelId(update?.relationships, 'manga');
   if (id === '') {
-    console.log('No suitable id found in getMangaData', update);
-    return;
+    id = getRelId(update?.relationships, 'manga');
+    if (id === '') {
+      console.log('No suitable id found in getMangaData', update);
+      return;
+    }
   }
-
   const url = `${process.env.MANGADEX_URL}/manga/${id}`;
   const options = {
     method: 'GET',
@@ -183,8 +183,8 @@ function getCoverFileName(mangaData) {
 
 
 async function processUpdates(updates) {
-  const toReturn = [];
-  for (const update of updates) {
+  //Returns the updates in an embed format for discord.
+  return updates.map(async update => {
     const mangaData = await getMangaData(update);
     const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
     const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
@@ -204,13 +204,13 @@ async function processUpdates(updates) {
         'thumbnail': { 'url': thumbnailUrl }
       }]
     };
-    toReturn.push(embed);
-  }
-  return toReturn;
+    return embed;
+  });
 }
 
 
 async function createList(listName) {
+  //Creates a new list for a server.
   const url = `${process.env.MANGADEX_URL}/list`;
   const bod = {
     name: listName,
@@ -242,10 +242,35 @@ async function createList(listName) {
 }
 
 
+async function getMangaEmbeds(mangaIds) {
+  //Input of mangaIds, gets manga data and returns embeds for all of them.
+  const toPromise = mangaIds.map(mangaId => getMangaData('', mangaId));
+  const results = await Promise.all(toPromise);
+  return results.map(async mangaData => {
+    const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
+    const coverFileName = await getCoverFileName(mangaData);
+    const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
+    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+    const embed = {
+      'embeds': [{
+        'title': `${mangaTitle}`,
+        'description': `Author: ${authorName}`,
+        'color': 16742144,
+        //'footer': { 'text': 'That New New' },
+        'url': `https://mangadex.org/title/${mangaData?.id}/`,
+        'thumbnail': { 'url': thumbnailUrl }
+      }]
+    };
+    return embed;
+  });
+}
+
+
 module.exports = {
   getTitleInfo,
   updateMangaList,
   getMangaUpdates,
   processUpdates,
-  createList
+  createList,
+  getMangaEmbeds
 };

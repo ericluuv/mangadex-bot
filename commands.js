@@ -2,11 +2,11 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const { updateMangaList, getTitleInfo, createList } = require('./manga.js');
+const { updateMangaList, getTitleInfo, createList, getMangaEmbeds } = require('./manga.js');
 
 const { 
-  insertFollow, delFollow, getGuildRow, getMangaCount, getGuildTable,
-  updateChannelId, insertGuildRow
+  insertFollow, delFollow, getGuildRow, getMangaCount,
+  updateChannelId, insertGuildRow, getFollowedMangas
 } = require('./postgres.js');
 
 const followCommand = new SlashCommandBuilder()
@@ -73,52 +73,30 @@ async function createCommands() {
   console.log('Commands created');
 }
 
-async function handleAddCommand(interaction) {
-  const info = getTitleInfo(interaction.options);
-  const mangaId = info[0];
-  const mangaTitle = info[1];
-  let verb, method;
-  if (interaction.commandName === 'add') {
-    verb = 'added';
-    method = 'POST';
-  }
-  else {
-    verb = 'deleted';
-    method = 'DELETE';
-  }
-  /*
-  const userId = interaction.user.id;
-  bot.channels.cache.get(process.env.CHANNEL_STAGING_ID).send({
-    content: `<@${userId}> `
-  });*/
-  const res = await updateMangaList(mangaId, method);
-  if (res.result === 'ok') {
-    await interaction.deferReply();
-    await interaction.editReply({
-      content: `Successfully ${verb} ${mangaTitle} <:dababy:827023206631866428>`
-    });
-  }
-  else {
-    console.log('Failed', res);
-    await interaction.reply({
-      content: `Error!`
-    });
-  }
+
+function checkGuild(guildId) {
+  //Returns true if the guild exists in the table, false if not.
+  return getGuildRow(guildId).then(res => Boolean(res?.length || 0));
 }
 
 
 async function handleFollowCommand(interaction) {
   await interaction.deferReply();
+  const guildId = interaction.guild.id;
   const info = getTitleInfo(interaction.options);
   const userId = interaction.user.id;
   const mangaId = info[0];
   const mangaTitle = info[1];
-  const guildId = interaction.guild.id;
-  const listId = (await getGuildRow(guildId))[0]?.list_id;
+  const guildStatus = await checkGuild(guildId);
   if (mangaId === '') {
     await interaction.editReply({content: 'Invalid URL.'});
     return;
   }
+  if (!guildStatus) {
+    await interaction.editReply({content: 'Channel has not been set, use /set to do so.'});
+    return;
+  }
+  const listId = (await getGuildRow(guildId))[0]?.list_id;
 
   const status = await updateMangaList(mangaId, listId, 'POST');
   if (status !== 'ok') { 
@@ -127,29 +105,34 @@ async function handleFollowCommand(interaction) {
   else {
     const res = await insertFollow(userId, mangaId, guildId);
     if (res) { 
-      await interaction.editReply({content: `Now following ${mangaTitle}`});
+      await interaction.editReply({content: `Now following ${mangaTitle || mangaId}`});
     }
     else {
-      await interaction.editReply({content: `Already following ${mangaTitle}`});
+      await interaction.editReply({content: `Already following ${mangaTitle || mangaId}`});
     }
   }
 }
 
 async function handleUnfollowCommand(interaction) {
   await interaction.deferReply();
+  const guildId = interaction.guild.id;
   const info = getTitleInfo(interaction.options);
   const userId = interaction.user.id;
   const mangaId = info[0];
   const mangaTitle = info[1];
-  const guildId = interaction.guild.id;
-
-  if (mangaId === '') { 
-    await interaction.editReply({content: `URL was invalid.`});
+  const guildStatus = await checkGuild(guildId);
+  if (mangaId === '') {
+    await interaction.editReply({content: 'Invalid URL.'});
     return;
   }
+  if (!guildStatus) {
+    await interaction.editReply({content: 'Channel has not been set, use /set to do so.'});
+    return;
+  }
+
   const count = await delFollow(userId, mangaId, guildId);
   if (count === 0) { 
-    await interaction.editReply({content: `Wasn't even following ${mangaTitle}`});
+    await interaction.editReply({content: `Wasn't even following ${mangaTitle || mangaId}`});
   }
   else {
     const mangaCount = await getMangaCount(mangaId);
@@ -157,9 +140,9 @@ async function handleUnfollowCommand(interaction) {
     if (mangaCount === '0') {
       const listId = (await getGuildRow(guildId))?.[0]?.list_id;
       await updateMangaList(mangaId, listId, 'DELETE');
-      console.log(`${mangaTitle} was deleted from list: ${listId}`);
+      console.log(`${mangaTitle || mangaId} was deleted from list: ${listId}`);
     }
-    await interaction.editReply({content: `No longer following ${mangaTitle}`});
+    await interaction.editReply({content: `No longer following ${mangaTitle || mangaId}`});
   }
 }
 
@@ -167,25 +150,39 @@ async function handleSetCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
   const channelId = interaction.channel.id;
-  const guilds = (await getGuildTable()).map((elem) => {
-    return elem.guild_id;
-  });
-  console.log('curr guildId, channelIds, and all guilds', guildId, channelId, guilds);
+  const guildCheck = await checkGuild(guildId);
 
-  if (guilds.includes(guildId)) {
+  if (guildCheck) {
     await updateChannelId(guildId, channelId);
   }
   else {
-    const listId = await createList('botList' + 1);
+    const listId = await createList('botList' + (guilds.length + 1));
     if (typeof(listId) != 'undefined') { insertGuildRow(guildId, listId, channelId); }
   }
   await interaction.editReply({content: 'Channel Successfuly Set'});
 }
 
+async function handleListCommand(interaction) {
+  await interaction.deferReply();
+  const guildId = interaction.guild.id;
+  const userId = interaction.user.id;
+  const guildStatus = await checkGuild(guildId);
+  if (!guildStatus) {
+    await interaction.editReply({content: 'Channel has not been set, use /set to do so.'});
+    return;
+  }
+
+  const mangaIds = await getFollowedMangas(guildId, userId);
+  const embeds = await Promise.all(await getMangaEmbeds(mangaIds));
+
+  await interaction.editReply({content: `Getting ${embeds.length} Mangas`});
+  await Promise.all(embeds.map(embed => interaction.channel.send(embed)));
+}
 
 module.exports = {
   createCommands,
   handleFollowCommand,
   handleUnfollowCommand,
-  handleSetCommand
+  handleSetCommand,
+  handleListCommand
 };

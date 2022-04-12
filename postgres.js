@@ -228,6 +228,7 @@ async function insertFollow(userId, mangaId, guildId) {
   }
 }
 
+
 function delFollow(userId, mangaId, guildId) {
   //Deletes the specified row from the follows table;
   const deleteString = `DELETE FROM follows WHERE user_id = '${userId}' AND
@@ -236,12 +237,23 @@ function delFollow(userId, mangaId, guildId) {
   .catch(err => console.log(err));
 }
 
+
 function getMangaCount(mangaId) {
+  //Grabs count of how many people are following a manga. 
   const countString = `SELECT COUNT(*) FROM follows WHERE manga_id = '${mangaId}';`;
   return pool.query(countString).then(res => res?.rows?.[0]?.count)
   .catch(err => console.log(err));
 }
 
+
+function getFollowedMangas(guildId, userId) {
+  //Gets all mangaIds that a user is following in a guild.
+  const selectString = `SELECT manga_id FROM follows WHERE guild_id = '${guildId}'
+  AND user_id = '${userId}';`;
+  return pool.query(selectString).then(res => res?.rows.map(row => {
+    return row.manga_id;
+  })).catch(err => console.log(err));
+}
 
 
 module.exports = {
@@ -253,5 +265,6 @@ module.exports = {
   getGuildRow,
   insertFollow,
   delFollow,
-  getMangaCount
+  getMangaCount,
+  getFollowedMangas
 };

@@ -11,7 +11,10 @@ bot.login(process.env.DISCORD_STAGING_TOKEN);
 const fetch = require('node-fetch');
 
 //Commands
-const { createCommands, handleFollowCommand, handleUnfollowCommand, handleSetCommand } = require('./commands.js')
+const { 
+  createCommands, handleFollowCommand, handleUnfollowCommand, 
+  handleSetCommand, handleListCommand
+} = require('./commands.js')
 
 // postgreSQL 
 const { createTables, getGuildTable } = require('./postgres.js');
@@ -66,7 +69,7 @@ bot.on('interactionCreate', async interaction => {
   }
 
   else if (interaction.commandName === 'list') {
-    
+    await handleListCommand(interaction);
   }
 });
 
