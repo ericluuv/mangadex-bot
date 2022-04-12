@@ -205,7 +205,7 @@ async function handleMigrateCommand(interaction) {
   const listTitle = listInfo[1];
   console.log('the old listId', listId);
   const mangaIds = await getMangaIdsFromList(listId);
-  const newListId = (await getGuildRow(guildId))?.[0]?.guild_id;
+  const newListId = (await getGuildRow(guildId))?.[0]?.list_id;
   console.log('new list Id', newListId)
   await interaction.editReply({content: `Migrating ${mangaIds.length} from ${listTitle} to server list.`});
   await getSessionToken(); // So all the upcoming requests have an updated token.
