@@ -13,7 +13,7 @@ const fetch = require('node-fetch');
 //Commands
 const { 
   createCommands, handleFollowCommand, handleUnfollowCommand, 
-  handleSetCommand, handleListCommand
+  handleSetCommand, handleListCommand, handleMigrateCommand
 } = require('./commands.js')
 
 // postgreSQL 
@@ -70,6 +70,10 @@ bot.on('interactionCreate', async interaction => {
 
   else if (interaction.commandName === 'list') {
     await handleListCommand(interaction);
+  }
+  
+  else if (interaction.commandName === 'migrate') {
+    await handleMigrateCommand(interaction);
   }
 });
 

@@ -265,6 +265,26 @@ async function getMangaEmbeds(mangaIds) {
   });
 }
 
+function getMangaIdsFromList(listId) {
+  //Gets all mangaIds from a listId.
+  const url = process.env.MANGADEX_URL + `/list/${listId}`;
+  let options = {
+    method: 'GET',
+    headers: { 'Content-type': 'application/json' }
+  };
+
+  return fetch(url, options).then(async (res) => {
+    const json = await res.json();
+    if (json.result === 'ok') { 
+      console.log('getList() successful');
+    }
+    else { console.log('getList() unsuccessful', json) };
+    return json?.data?.relationships.filter(rel => rel.type === 'manga') || [];
+  }).catch((err) => {
+    console.log(err);
+  });
+}
+
 
 module.exports = {
   getTitleInfo,
@@ -272,5 +292,7 @@ module.exports = {
   getMangaUpdates,
   processUpdates,
   createList,
-  getMangaEmbeds
+  getMangaEmbeds,
+  getMangaIdsFromList
 };
+

@@ -2,9 +2,9 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const { updateMangaList, getTitleInfo, createList, getMangaEmbeds } = require('./manga.js');
+const { updateMangaList, getTitleInfo, createList, getMangaEmbeds, getMangaIdsFromList } = require('./manga.js');
 
-const { 
+const {
   insertFollow, delFollow, getGuildRow, getMangaCount,
   updateChannelId, insertGuildRow, getFollowedMangas, getGuildTable
 } = require('./postgres.js');
@@ -35,7 +35,15 @@ const listMangaCommands = new SlashCommandBuilder()
   .setDescription('Lists manga the user is currently folllowing')
   ;
 
-const commands = [followCommand, unfollowCommand, setChannelCommands, listMangaCommands];
+const migrateCommand = newSlashCommandBUilder()
+  .setName('migrate')
+  .setDescription('Migrates a public list of mangas to the server list.')
+  .addStringOption((option) => {
+    return option.setName('url')
+      .setDescription('The URL of the manga list').setRequired(true);
+  });
+
+const commands = [followCommand, unfollowCommand, setChannelCommands, listMangaCommands, migrateCommand];
 
 const global_url = `https://discord.com/api/v8/applications/${process.env.APPLICATION_ID}/commands`;
 
@@ -52,7 +60,7 @@ function getCurrentCommands() {
     const json = await res.json();
     return json.map(command => command.name);
   })
-  .catch(err => console.log(err));
+    .catch(err => console.log(err));
 }
 
 async function createCommands() {
@@ -89,26 +97,26 @@ async function handleFollowCommand(interaction) {
   const mangaTitle = info[1];
   const guildStatus = await checkGuild(guildId);
   if (mangaId === '') {
-    await interaction.editReply({content: 'Invalid URL.'});
+    await interaction.editReply({ content: 'Invalid URL.' });
     return;
   }
   if (!guildStatus) {
-    await interaction.editReply({content: 'Channel has not been set, use /set to do so.'});
+    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
     return;
   }
   const listId = (await getGuildRow(guildId))[0]?.list_id;
 
   const status = await updateMangaList(mangaId, listId, 'POST');
-  if (status !== 'ok') { 
-    await interaction.editReply({content: 'Mangadex API error with the list.'});
+  if (status !== 'ok') {
+    await interaction.editReply({ content: 'Mangadex API error with the list.' });
   }
   else {
     const res = await insertFollow(userId, mangaId, guildId);
-    if (res) { 
-      await interaction.editReply({content: `Now following ${mangaTitle || mangaId}`});
+    if (res) {
+      await interaction.editReply({ content: `Now following ${mangaTitle || mangaId}` });
     }
     else {
-      await interaction.editReply({content: `Already following ${mangaTitle || mangaId}`});
+      await interaction.editReply({ content: `Already following ${mangaTitle || mangaId}` });
     }
   }
 }
@@ -122,17 +130,17 @@ async function handleUnfollowCommand(interaction) {
   const mangaTitle = info[1];
   const guildStatus = await checkGuild(guildId);
   if (mangaId === '') {
-    await interaction.editReply({content: 'Invalid URL.'});
+    await interaction.editReply({ content: 'Invalid URL.' });
     return;
   }
   if (!guildStatus) {
-    await interaction.editReply({content: 'Channel has not been set, use /set to do so.'});
+    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
     return;
   }
 
   const count = await delFollow(userId, mangaId, guildId);
-  if (count === 0) { 
-    await interaction.editReply({content: `Wasn't even following ${mangaTitle || mangaId}`});
+  if (count === 0) {
+    await interaction.editReply({ content: `Wasn't even following ${mangaTitle || mangaId}` });
   }
   else {
     const mangaCount = await getMangaCount(mangaId);
@@ -142,7 +150,7 @@ async function handleUnfollowCommand(interaction) {
       await updateMangaList(mangaId, listId, 'DELETE');
       console.log(`${mangaTitle || mangaId} was deleted from list: ${listId}`);
     }
-    await interaction.editReply({content: `No longer following ${mangaTitle || mangaId}`});
+    await interaction.editReply({ content: `No longer following ${mangaTitle || mangaId}` });
   }
 }
 
@@ -151,15 +159,15 @@ async function handleSetCommand(interaction) {
   const guildId = interaction.guild.id;
   const channelId = interaction.channel.id;
   const guilds = await getGuildTable();
-  
+
   if (guilds.includes(guildId)) {
     await updateChannelId(guildId, channelId);
   }
   else {
     const listId = await createList('botList' + (guilds.length + 1));
-    if (typeof(listId) != 'undefined') { insertGuildRow(guildId, listId, channelId); }
+    if (typeof (listId) != 'undefined') { insertGuildRow(guildId, listId, channelId); }
   }
-  await interaction.editReply({content: 'Channel Successfuly Set'});
+  await interaction.editReply({ content: 'Channel Successfuly Set' });
 }
 
 async function handleListCommand(interaction) {
@@ -168,15 +176,36 @@ async function handleListCommand(interaction) {
   const userId = interaction.user.id;
   const guildStatus = await checkGuild(guildId);
   if (!guildStatus) {
-    await interaction.editReply({content: 'Channel has not been set, use /set to do so.'});
+    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
     return;
   }
 
   const mangaIds = await getFollowedMangas(guildId, userId);
   const embeds = await Promise.all(await getMangaEmbeds(mangaIds));
 
-  await interaction.editReply({content: `Getting ${embeds.length} Mangas`});
+  await interaction.editReply({ content: `Getting ${embeds.length} Mangas` });
   await Promise.all(embeds.map(embed => interaction.channel.send(embed)));
+}
+
+async function handleMigrateCommand(interaction) {
+  await interaction.deferReply();
+  const guildId = interaction.guild.id;
+  const userId = interaction.user.id;
+  const guildStatus = await checkGuild(guildId);
+  if (!guildStatus) { 
+    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
+    return;
+  }
+
+  const listId = await getGuildRow(guildId)[0]?.list_id;
+  const mangaIds = await getMangaIdsFromList(listId);
+  await interaction.editReply({content: `Migrating ${mangaIds.length} to server list.`});
+  await Promise.all(mangaIds.map(mangaId => {
+    return updateMangaList(mangaId, listId, 'POST')
+  }));
+  await Promise.all(mangaIds.map(mangaId => {
+    return insertFollow(userId, mangaId, guildId);
+  }));
 }
 
 module.exports = {
@@ -184,5 +213,6 @@ module.exports = {
   handleFollowCommand,
   handleUnfollowCommand,
   handleSetCommand,
-  handleListCommand
+  handleListCommand,
+  handleMigrateCommand
 };
