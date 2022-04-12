@@ -5,7 +5,7 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const { MessageAttachment, MessageEmbed } = require('discord.js');
 const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PRESENCES"] });
-bot.login(process.env.DISCORD_STAGING_TOKEN);
+bot.login(process.env.DISCORD_TOKEN);
 
 // request API
 const fetch = require('node-fetch');

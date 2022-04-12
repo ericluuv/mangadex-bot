@@ -37,13 +37,13 @@ const listMangaCommands = new SlashCommandBuilder()
 
 const commands = [followCommand, unfollowCommand, setChannelCommands, listMangaCommands];
 
-const global_url = `https://discord.com/api/v8/applications/${process.env.APPLICATION_STAGING_ID}/commands`;
+const global_url = `https://discord.com/api/v8/applications/${process.env.APPLICATION_ID}/commands`;
 
 function getCurrentCommands() {
   const options = {
     method: 'GET',
     headers: {
-      'Authorization': `Bot ${process.env.DISCORD_STAGING_TOKEN}`,
+      'Authorization': `Bot ${process.env.DISCORD_TOKEN}`,
       'Content-Type': 'application/json'
     }
   };
@@ -63,7 +63,7 @@ async function createCommands() {
       method: 'POST',
       body: JSON.stringify(command.toJSON()),
       headers: {
-        'Authorization': `Bot ${process.env.DISCORD_STAGING_TOKEN}`,
+        'Authorization': `Bot ${process.env.DISCORD_TOKEN}`,
         'Content-Type': 'application/json'
       }
     };

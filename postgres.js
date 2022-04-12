@@ -2,10 +2,8 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { Pool, Client } = require('pg');
 const pool = new Pool({
-  /*
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }*/
-  connectionString: process.env.DATABASE_STAGING_URL
+  ssl: { rejectUnauthorized: false }
 });
 
 //Session & Refresh token table
