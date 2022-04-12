@@ -2,7 +2,7 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const { updateMangaList, getTitleInfo, createList, getMangaEmbeds, getMangaIdsFromList } = require('./manga.js');
+const { updateMangaList, getTitleInfo, createList, getMangaEmbeds, getMangaIdsFromList, getListId } = require('./manga.js');
 
 const {
   insertFollow, delFollow, getGuildRow, getMangaCount,
@@ -197,7 +197,8 @@ async function handleMigrateCommand(interaction) {
     return;
   }
 
-  const listId = await getGuildRow(guildId)[0]?.list_id;
+  const listInfo = getListId(interaction.options);
+  const listId = listInfo[0];
   const mangaIds = await getMangaIdsFromList(listId);
   await interaction.editReply({content: `Migrating ${mangaIds.length} to server list.`});
   await Promise.all(mangaIds.map(mangaId => {

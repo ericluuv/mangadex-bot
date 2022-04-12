@@ -38,6 +38,20 @@ function getTitleInfo(intOptions) {
   return toReturn;
 }
 
+function getListId(intOptions) {
+  //Grabs listID and list name from listUrl.
+  const input = intOptions.getString('url');
+  const toReturn = [];
+  if (input.slice(0, 26) !== 'https://mangadex.org/list/') {
+    console.log('Invalid URL', input);
+    return ['', ''];
+  }
+  toReturn[0] = input.slice(26, input.indexOf('/', 26));
+  if (input.includes('?')) { toReturn[1] = input.slice(input.indexOf('/', 26)+1, input.indexOf('?')); }
+  else { toReturn[1] = input.slice(input.indexOf('/', 26) + 1); }
+  return toReturn;
+}
+
 
 function getMangaUpdates(listId) {
   //Returns an array of all mangas that have been updated in the last 20 minutes.
@@ -293,6 +307,7 @@ module.exports = {
   processUpdates,
   createList,
   getMangaEmbeds,
-  getMangaIdsFromList
+  getMangaIdsFromList,
+  getListId
 };
 
