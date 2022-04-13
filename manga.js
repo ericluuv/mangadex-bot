@@ -71,30 +71,31 @@ async function getMangaUpdates(listId) {
       console.log('err', err);
       console.log('err.msg', err.message);
     });
+
+    if (json?.result === 'ok') {
+      const toReturn = []
+      const uniques = new Set();
+      for (const update of json.data) {
+        if (!uniques.has(update.id)) {
+          uniques.add(update.id);
+          toReturn.push(update);
+        }
+      }
+      for (const c of toReturn) {
+        console.log('Returned data items', c);
+      }
+      return toReturn;
+    }
+    else {
+      console.log('getMangaUpdates() failed.', json);
+      return [];
+    }
   }
   catch (err) {
     console.log(err);
     console.log('the res when crashing', res);
   }
-
-  if (json?.result === 'ok') {
-    const toReturn = []
-    const uniques = new Set();
-    for (const update of json.data) {
-      if (!uniques.has(update.id)) {
-        uniques.add(update.id);
-        toReturn.push(update);
-      }
-    }
-    for (const c of toReturn) {
-      console.log('Returned data items', c);
-    }
-    return toReturn;
-  }
-  else {
-    console.log('getMangaUpdates() failed.', json);
-    return [];
-  }
+  return [];
 }
 
 
