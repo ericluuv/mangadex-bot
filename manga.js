@@ -2,11 +2,9 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { getSessionToken } = require('./postgres.js');
 
-async function updateMangaList(mangaId, listId, method) {
+function updateMangaList(mangaId, listId, method, token) {
   //Adds or deletes manga from the mangaList via it's ID.
   const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${listId}`;
-  const token = await getSessionToken();
-  console.log(`Some of bearer token: ${token.slice(0, 10)}`);
   let options = {
     method: `${method}`,
     headers: {
@@ -15,15 +13,15 @@ async function updateMangaList(mangaId, listId, method) {
     }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
-    else { console.log('add/deleteManga() unsuccessful', json) };
-    return json.result;
-  }).catch((err) => {
-    console.log(err);
-  });
+  return fetch(url, options).then(res => res.json())
+    .then(json => {
+      if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
+      else { console.log('add/deleteManga() unsuccessful', json) };
+      return json.result;
+    })
+    .catch(err => console.log(err));
 }
+
 
 
 function getTitleInfo(intOptions) {
@@ -47,7 +45,7 @@ function getListId(intOptions) {
     return ['', ''];
   }
   toReturn[0] = input.slice(26, input.indexOf('/', 26));
-  if (input.includes('?')) { toReturn[1] = input.slice(input.indexOf('/', 26)+1, input.indexOf('?')); }
+  if (input.includes('?')) { toReturn[1] = input.slice(input.indexOf('/', 26) + 1, input.indexOf('?')); }
   else { toReturn[1] = input.slice(input.indexOf('/', 26) + 1); }
   return toReturn;
 }
@@ -64,8 +62,7 @@ function getMangaUpdates(listId) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
+  return fetch(url, options).then(res => res.json).then(json => {
     if (json.result === 'ok') {
       const toReturn = []
       const uniques = new Set();
@@ -82,8 +79,9 @@ function getMangaUpdates(listId) {
     }
     else {
       console.log('getMangaUpdates() failed.', json);
+      return [];
     }
-  }).catch((err) => {
+  }).catch(err => {
     console.log(err);
     return [];
   });
@@ -113,8 +111,7 @@ function getScanGroup(update) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
+  return fetch(url, options).then(res => res.json()).then(json => {
     if (json.result === 'ok') { return json.data?.attributes?.name; }
     else { console.log(`URL: ${url} failed`, json); }
   }).catch((err) => {
@@ -138,8 +135,7 @@ async function getMangaData(update, id = '') {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
+  return fetch(url, options).then(res => res.json()).then(json => {
     if (json.result === 'ok') { return json.data; }
     else { console.log(`URL: ${url} failed`, json); }
   }).catch((err) => {
@@ -162,8 +158,7 @@ function getAuthorName(mangaData) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
+  return fetch(url, options).then(res => res.json()).then(json => {
     if (json.result === 'ok') { return json.data?.attributes?.name; }
     else { console.log(`URL: ${url} failed`, json); }
   }).catch((err) => {
@@ -186,8 +181,7 @@ function getCoverFileName(mangaData) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
+  return fetch(url, options).then(res => res.json()).then(json => {
     if (json.result === 'ok') { return json.data?.attributes?.fileName; }
     else { console.log(`URL: ${url} failed`, json); }
   }).catch((err) => {
@@ -241,8 +235,7 @@ async function createList(listName) {
     }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
+  return fetch(url, options).then(res => res.json()).then(json => {
     if (json.result === 'ok') {
       console.log(`${listName} successfully created`);
       return json.data.id;
@@ -250,9 +243,7 @@ async function createList(listName) {
     else {
       console.log(`${listName} could not be created.`, json);
     }
-  }).catch((err) => {
-    console.log(err);
-  });
+  }).catch(err => console.log(err));
 }
 
 
@@ -300,7 +291,7 @@ async function getMangaIdsFromList(listId) {
   });*/
   const res = await fetch(url, options).catch(err => console.log(err));
   const json = await res.json();
-  if (json.result === 'ok') { 
+  if (json.result === 'ok') {
     console.log('getList() successful');
   }
   else { console.log('getList() unsuccessful', json) };
@@ -319,3 +310,19 @@ module.exports = {
   getListId
 };
 
+async function test() {
+  const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
+  let url = process.env.MANGADEX_URL + `/list/faeb7e65-cf01-4c9b-8ab8-ce6c1a2b4579/feed`
+    + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
+    ;
+  url = 'https://api.mangadex.org/list/faeb7e65-cf01-4c9b-8ab8-ce6c1a2b4579/feed?translatedLanguage[]=en&createdAtSince=2022-04-13T01:03:33';
+  const options = {
+    method: 'GET',
+    headers: { 'Content-type': 'application/json' }
+  };
+
+  const res = await (fetch(url, options).then(res => res.json()));
+  console.log(res);
+}
+
+test();

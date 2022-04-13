@@ -27,6 +27,7 @@ async function pollUpdates(previousUrls) {
   //Continuously checks for updates every 10 minutes and sends them out.
   const guildTable = await getGuildTable();
   for (const row of guildTable) {
+    console.log(row, guildTable.length);
     const listId = row.list_id, channelId = row.channel_id;
     const updates = await getMangaUpdates(listId);
     console.log(`Num of updates: ${updates.length}`);

@@ -2,8 +2,8 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const { 
-  updateMangaList, getTitleInfo, createList, getMangaEmbeds, 
+const {
+  updateMangaList, getTitleInfo, createList, getMangaEmbeds,
   getMangaIdsFromList, getListId
 } = require('./manga.js');
 
@@ -108,8 +108,9 @@ async function handleFollowCommand(interaction) {
     return;
   }
   const listId = (await getGuildRow(guildId))[0]?.list_id;
-
-  const status = await updateMangaList(mangaId, listId, 'POST');
+  
+  const token = await getSessionToken();
+  const status = await updateMangaList(mangaId, listId, 'POST', token);
   if (status !== 'ok') {
     await interaction.editReply({ content: 'Mangadex API error with the list.' });
   }
@@ -150,7 +151,8 @@ async function handleUnfollowCommand(interaction) {
     console.log('THE MANGA COUNT', mangaCount);
     if (mangaCount === '0') {
       const listId = (await getGuildRow(guildId))?.[0]?.list_id;
-      await updateMangaList(mangaId, listId, 'DELETE');
+      const token = await getSessionToken();
+      await updateMangaList(mangaId, listId, 'DELETE', token);
       console.log(`${mangaTitle || mangaId} was deleted from list: ${listId}`);
     }
     await interaction.editReply({ content: `No longer following ${mangaTitle || mangaId}` });
@@ -195,22 +197,25 @@ async function handleMigrateCommand(interaction) {
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
   const guildStatus = await checkGuild(guildId);
-  if (!guildStatus) { 
+  if (!guildStatus) {
     await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
     return;
   }
-
   const listInfo = getListId(interaction.options);
   const listId = listInfo[0];
   const listTitle = listInfo[1];
+  if (listId === '') {
+    await interaction.deferReply({ content: 'Invalid URL.' });
+    return;
+  }
   console.log('the old listId', listId);
   const mangaIds = await getMangaIdsFromList(listId);
   const newListId = (await getGuildRow(guildId))?.[0]?.list_id;
   console.log('new list Id', newListId)
-  await interaction.editReply({content: `Migrating ${mangaIds.length} from ${listTitle} to server list.`});
-  await getSessionToken(); // So all the upcoming requests have an updated token.
+  await interaction.editReply({ content: `Migrating ${mangaIds.length} from ${listTitle} to server list.` });
+  const token = await getSessionToken(); // So all the upcoming requests have an updated token.
   await Promise.all(mangaIds.map(mangaId => {
-    return updateMangaList(mangaId, newListId, 'POST')
+    return updateMangaList(mangaId, newListId, 'POST', token)
   }));
   await Promise.all(mangaIds.map(mangaId => {
     return insertFollow(userId, mangaId, guildId);
