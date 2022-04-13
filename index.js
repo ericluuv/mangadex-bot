@@ -43,8 +43,8 @@ async function pollUpdates(previousUrls) {
         await bot.channels.cache.get(channelId).send({content: `UPDATE FOR ${users}`});
       }
     }
-    setTimeout(function(){pollUpdates(newSet)}, 600000);
   }
+  setTimeout(function(){pollUpdates(newSet)}, 600000);
 }
 
 
