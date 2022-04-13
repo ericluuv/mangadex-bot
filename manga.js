@@ -9,6 +9,7 @@ async function updateMangaList(mangaId, listId, method) {
   let options = {
     method: `${method}`,
     headers: {
+      'Accept': 'application/json',
       'Content-type': 'application/json',
       'Authorization': `Bearer ${token}`
     }
@@ -57,7 +58,10 @@ async function getMangaUpdates(listId) {
     ;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: { 
+      'Accept': 'application/json',
+      'Content-type': 'application/json' 
+    }
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
@@ -104,7 +108,10 @@ async function getScanGroup(update) {
   const url = `${process.env.MANGADEX_URL}/group/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: { 
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
@@ -127,7 +134,10 @@ async function getMangaData(update, id = '') {
   const url = `${process.env.MANGADEX_URL}/manga/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: { 
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
@@ -148,7 +158,10 @@ async function getAuthorName(mangaData) {
   const url = `${process.env.MANGADEX_URL}/author/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: { 
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
   const res = await fetch(url, options).catch(err => console(err));
@@ -170,7 +183,10 @@ async function getCoverFileName(mangaData) {
   const url = `${process.env.MANGADEX_URL}/cover/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: { 
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
   const res = await fetch(url, options);
@@ -223,6 +239,7 @@ async function createList(listName) {
     method: 'POST',
     body: JSON.stringify(bod),
     headers: {
+      'Accept': 'application/json',
       'Content-type': 'application/json',
       'Authorization': `Bearer ${token}`
     }
@@ -271,7 +288,10 @@ async function getMangaIdsFromList(listId) {
   const url = process.env.MANGADEX_URL + `/list/${listId}`;
   let options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: { 
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
@@ -294,4 +314,3 @@ module.exports = {
   getMangaIdsFromList,
   getListId
 };
-
