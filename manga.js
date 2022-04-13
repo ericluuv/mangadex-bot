@@ -61,7 +61,6 @@ async function getMangaUpdates(listId) {
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
-  console.log('the res', res);
   const json = await res.json();
 
   if (json.result === 'ok') {
@@ -94,7 +93,7 @@ function getRelId(relationships, type) {
 }
 
 
-function getScanGroup(update) {
+async function getScanGroup(update) {
   //Grabs scanlation group name from relationships attribute, null if no value.
   const id = getRelId(update?.relationships, 'scanlation_group');
   if (id === '') {
@@ -108,12 +107,11 @@ function getScanGroup(update) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(res => res.json()).then(json => {
-    if (json.result === 'ok') { return json.data?.attributes?.name; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data?.attributes?.name; }
+  else { console.log(`URL: ${url} failed`, json); }
+
 }
 
 
@@ -132,16 +130,14 @@ async function getMangaData(update, id = '') {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(res => res.json()).then(json => {
-    if (json.result === 'ok') { return json.data; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data; }
+  else { console.log(`URL: ${url} failed`, json); }
 }
 
 
-function getAuthorName(mangaData) {
+async function getAuthorName(mangaData) {
   //Gets mangaData from update.
   const id = getRelId(mangaData?.relationships, 'author');
   if (id === '') {
@@ -155,16 +151,15 @@ function getAuthorName(mangaData) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(res => res.json()).then(json => {
-    if (json.result === 'ok') { return json.data?.attributes?.name; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options).catch(err => console(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data?.attributes?.name; }
+  else { console.log(`URL: ${url} failed`, json); }
+
 }
 
 
-function getCoverFileName(mangaData) {
+async function getCoverFileName(mangaData) {
   //Gets mangaData from update.
   const id = getRelId(mangaData?.relationships, 'cover_art');
   if (id === '') {
@@ -178,12 +173,10 @@ function getCoverFileName(mangaData) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(res => res.json()).then(json => {
-    if (json.result === 'ok') { return json.data?.attributes?.fileName; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options);
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data?.attributes?.fileName; }
+  else { console.log(`URL: ${url} failed`, json); }
 }
 
 
@@ -235,15 +228,17 @@ async function createList(listName) {
     }
   };
 
-  return fetch(url, options).then(res => res.json()).then(json => {
-    if (json.result === 'ok') {
-      console.log(`${listName} successfully created`);
-      return json.data.id;
-    }
-    else {
-      console.log(`${listName} could not be created.`, json);
-    }
-  }).catch(err => console.log(err));
+
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') {
+    console.log(`${listName} successfully created`);
+    return json.data.id;
+  }
+  else {
+    console.log(`${listName} could not be created.`, json);
+  }
+
 }
 
 
