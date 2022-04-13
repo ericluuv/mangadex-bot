@@ -17,7 +17,7 @@ const {
 } = require('./commands.js')
 
 // postgreSQL 
-const { createTables, getGuildTable } = require('./postgres.js');
+const { createTables, getGuildTable, getUsersToMention } = require('./postgres.js');
 
 //MagnaDex Stuff
 const { getMangaUpdates, processUpdates } = require('./manga.js');
@@ -27,16 +27,20 @@ async function pollUpdates(previousUrls) {
   //Continuously checks for updates every 10 minutes and sends them out.
   const guildTable = await getGuildTable();
   for (const row of guildTable) {
-    console.log(row, guildTable.length);
-    const listId = row.list_id, channelId = row.channel_id;
+    const guildId = row.guild_id, listId = row.list_id, channelId = row.channel_id;
     const updates = await getMangaUpdates(listId);
-    console.log(`Num of updates: ${updates.length}`);
+    console.log('Num of updates:', updates.length);
     const newSet = new Set();
+    const allEmbeds = await processUpdates(updates);
 
-    for (const toEmbed of (await processUpdates(updates))) {
-      if (!previousUrls.has(toEmbed.embeds[0].url)) {
-        newSet.add(toEmbed.embeds[0].url);
-        await bot.channels.cache.get(channelId).send(toEmbed);
+    for (const toEmbed of allEmbeds) {
+      const url = toEmbed.toSend.url;
+      if (!previousUrls.has(url)) {
+        newSet.add(url);
+        const mangaId = toEmbed.manga_id;
+        await bot.channels.cache.get(channelId).send({embeds: [toEmbed.toSend]});
+        const users = await getUsersToMention(mangaId, guildId);
+        await bot.channels.cache.get(channelId).send({content: `UPDATE FOR ${users}`});
       }
     }
     setTimeout(function(){pollUpdates(newSet)}, 600000);

@@ -2,9 +2,10 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { getSessionToken } = require('./postgres.js');
 
-function updateMangaList(mangaId, listId, method, token) {
+async function updateMangaList(mangaId, listId, method) {
   //Adds or deletes manga from the mangaList via it's ID.
   const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${listId}`;
+  const token = await getSessionToken();
   let options = {
     method: `${method}`,
     headers: {
@@ -12,16 +13,12 @@ function updateMangaList(mangaId, listId, method, token) {
       'Authorization': `Bearer ${token}`
     }
   };
-
-  return fetch(url, options).then(res => res.json())
-    .then(json => {
-      if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
-      else { console.log('add/deleteManga() unsuccessful', json) };
-      return json.result;
-    })
-    .catch(err => console.log(err));
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
+  else { console.log('add/deleteManga() unsuccessful', json) };
+  return json.result;
 }
-
 
 
 function getTitleInfo(intOptions) {
@@ -35,6 +32,7 @@ function getTitleInfo(intOptions) {
   toReturn[1] = toReturn.length > 1 ? toReturn[1].split('-').join(' ') : 'Unknown';
   return toReturn;
 }
+
 
 function getListId(intOptions) {
   //Grabs listID and list name from listUrl.
@@ -192,7 +190,8 @@ function getCoverFileName(mangaData) {
 
 async function processUpdates(updates) {
   //Returns the updates in an embed format for discord.
-  return updates.map(async update => {
+  const toReturn = [];
+  for (const update of updates) {
     const mangaData = await getMangaData(update);
     const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
     const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
@@ -202,7 +201,7 @@ async function processUpdates(updates) {
     const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
     const chapterTitle = update?.attributes?.title || '';
     const embed = {
-      'embeds': [{
+      'toSend': {
         'title': `Ch ${chapter} - ${mangaTitle}`,
         'description': `${chapterTitle}\nAuthor: ${authorName}\nGroup: ${scanGroup}`,
         'color': 16742144,
@@ -210,10 +209,12 @@ async function processUpdates(updates) {
         'url': `https://mangadex.org/chapter/${update?.id}`,
         'timestamp': update?.attributes?.createdAt,
         'thumbnail': { 'url': thumbnailUrl }
-      }]
+      },
+      'manga_id': mangaData.id
     };
-    return embed;
-  });
+    toReturn.push(embed);
+  };
+  return toReturn;
 }
 
 
@@ -270,6 +271,7 @@ async function getMangaEmbeds(mangaIds) {
   });
 }
 
+
 async function getMangaIdsFromList(listId) {
   //Gets all mangaIds from a listId.
   const url = process.env.MANGADEX_URL + `/list/${listId}`;
@@ -278,17 +280,6 @@ async function getMangaIdsFromList(listId) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  /*
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { 
-      console.log('getList() successful');
-    }
-    else { console.log('getList() unsuccessful', json) };
-    return json?.data?.relationships.filter(rel => rel.type === 'manga').map(rel => rel.id) || [];
-  }).catch((err) => {
-    console.log(err);
-  });*/
   const res = await fetch(url, options).catch(err => console.log(err));
   const json = await res.json();
   if (json.result === 'ok') {
@@ -310,19 +301,3 @@ module.exports = {
   getListId
 };
 
-async function test() {
-  const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
-  let url = process.env.MANGADEX_URL + `/list/faeb7e65-cf01-4c9b-8ab8-ce6c1a2b4579/feed`
-    + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
-    ;
-  url = 'https://api.mangadex.org/list/faeb7e65-cf01-4c9b-8ab8-ce6c1a2b4579/feed?translatedLanguage[]=en&createdAtSince=2022-04-13T01:03:33';
-  const options = {
-    method: 'GET',
-    headers: { 'Content-type': 'application/json' }
-  };
-
-  const res = await (fetch(url, options).then(res => res.json()));
-  console.log(res);
-}
-
-test();
