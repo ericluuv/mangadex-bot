@@ -58,18 +58,24 @@ async function getMangaUpdates(listId) {
     ;
   const options = {
     method: 'GET',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
-      'Content-type': 'application/json' 
+      'Content-type': 'application/json'
     }
   };
 
-  const res = await fetch(url, options).catch(err => console.log(err));
-  console.log('result from fetching', res);
-  const json = await res.json().catch(err => {
-    console.log('err', err);
-    console.log('err.msg', err.message);
-  });
+  let res;
+  try {
+    res = await fetch(url, options).catch(err => console.log(err));
+    const json = await res.json().catch(err => {
+      console.log('err', err);
+      console.log('err.msg', err.message);
+    });
+  }
+  catch (err) {
+    console.log(err);
+    console.log('the res when crashing', res);
+  }
 
   if (json?.result === 'ok') {
     const toReturn = []
@@ -112,7 +118,7 @@ async function getScanGroup(update) {
   const url = `${process.env.MANGADEX_URL}/group/${id}`;
   const options = {
     method: 'GET',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
       'Content-type': 'application/json'
     }
@@ -138,7 +144,7 @@ async function getMangaData(update, id = '') {
   const url = `${process.env.MANGADEX_URL}/manga/${id}`;
   const options = {
     method: 'GET',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
       'Content-type': 'application/json'
     }
@@ -162,7 +168,7 @@ async function getAuthorName(mangaData) {
   const url = `${process.env.MANGADEX_URL}/author/${id}`;
   const options = {
     method: 'GET',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
       'Content-type': 'application/json'
     }
@@ -187,7 +193,7 @@ async function getCoverFileName(mangaData) {
   const url = `${process.env.MANGADEX_URL}/cover/${id}`;
   const options = {
     method: 'GET',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
       'Content-type': 'application/json'
     }
@@ -292,7 +298,7 @@ async function getMangaIdsFromList(listId) {
   const url = process.env.MANGADEX_URL + `/list/${listId}`;
   let options = {
     method: 'GET',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
       'Content-type': 'application/json'
     }
