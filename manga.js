@@ -49,7 +49,7 @@ function getListId(intOptions) {
 }
 
 
-function getMangaUpdates(listId) {
+async function getMangaUpdates(listId) {
   //Returns an array of all mangas that have been updated in the last 20 minutes.
   const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
   let url = process.env.MANGADEX_URL + `/list/${listId}/feed`
@@ -60,29 +60,28 @@ function getMangaUpdates(listId) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(res => res.json()).then(json => {
-    if (json.result === 'ok') {
-      const toReturn = []
-      const uniques = new Set();
-      for (const update of json.data) {
-        if (!uniques.has(update.id)) {
-          uniques.add(update.id);
-          toReturn.push(update);
-        }
+  const res = await fetch(url, options).catch(err => console.log(err));
+  console.log('the res', res);
+  const json = await res.json();
+
+  if (json.result === 'ok') {
+    const toReturn = []
+    const uniques = new Set();
+    for (const update of json.data) {
+      if (!uniques.has(update.id)) {
+        uniques.add(update.id);
+        toReturn.push(update);
       }
-      for (const c of toReturn) {
-        console.log('Returned data items', c);
-      }
-      return toReturn;
     }
-    else {
-      console.log('getMangaUpdates() failed.', json);
-      return [];
+    for (const c of toReturn) {
+      console.log('Returned data items', c);
     }
-  }).catch(err => {
-    console.log(err);
+    return toReturn;
+  }
+  else {
+    console.log('getMangaUpdates() failed.', json);
     return [];
-  });
+  }
 }
 
 
