@@ -65,9 +65,12 @@ async function getMangaUpdates(listId) {
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
-  const json = await res.json();
+  const json = await res.json().catch(err => {
+    console.log('err', err);
+    console.log('err.msg', err.message);
+  });
 
-  if (json.result === 'ok') {
+  if (json?.result === 'ok') {
     const toReturn = []
     const uniques = new Set();
     for (const update of json.data) {
