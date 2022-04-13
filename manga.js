@@ -65,6 +65,7 @@ async function getMangaUpdates(listId) {
   };
 
   const res = await fetch(url, options).catch(err => console.log(err));
+  console.log('result from fetching', res);
   const json = await res.json().catch(err => {
     console.log('err', err);
     console.log('err.msg', err.message);
