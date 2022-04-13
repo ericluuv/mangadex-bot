@@ -62,7 +62,7 @@ function getMangaUpdates(listId) {
     headers: { 'Content-type': 'application/json' }
   };
 
-  return fetch(url, options).then(res => res.json).then(json => {
+  return fetch(url, options).then(res => res.json()).then(json => {
     if (json.result === 'ok') {
       const toReturn = []
       const uniques = new Set();
