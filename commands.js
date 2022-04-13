@@ -197,6 +197,7 @@ async function handleListCommand(interaction) {
 async function handleMigrateCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
+  const userId = interaction.user.id;
   const guildStatus = await checkGuild(guildId);
   if (!guildStatus) {
     await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
@@ -213,7 +214,8 @@ async function handleMigrateCommand(interaction) {
   const newListId = (await getGuildRow(guildId))?.[0]?.list_id;
   
   for (const mangaId of mangaIds) {
-    await updateMangaList(mangaId, newListId, 'POST')
+    await updateMangaList(mangaId, newListId, 'POST');
+    await insertFollow(userId, mangaId, guildId);
   }
 
   await interaction.editReply({ content: `Migrated ${mangaIds.length} mangas from ${listTitle} to server list.` });
