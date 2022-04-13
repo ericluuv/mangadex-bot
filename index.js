@@ -26,11 +26,11 @@ const { getMangaUpdates, processUpdates } = require('./manga.js');
 async function pollUpdates(previousUrls) {
   //Continuously checks for updates every 10 minutes and sends them out.
   const guildTable = await getGuildTable();
+  const newSet = new Set();
   for (const row of guildTable) {
     const guildId = row.guild_id, listId = row.list_id, channelId = row.channel_id;
     const updates = await getMangaUpdates(listId);
     console.log('Num of updates:', updates.length);
-    const newSet = new Set();
     const allEmbeds = await processUpdates(updates);
 
     for (const toEmbed of allEmbeds) {
