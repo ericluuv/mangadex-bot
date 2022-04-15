@@ -64,7 +64,7 @@ async function createTables() {
 }
 
 
-function getDexTokens() {
+async function getDexTokens() {
   //Logins in using Mangadex credentials.
   await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/login';
@@ -88,7 +88,7 @@ function getDexTokens() {
 }
 
 
-function refreshSession(refreshToken) {
+async function refreshSession(refreshToken) {
   //Refreshes the session token using the refreshToken.
   await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/refresh';
