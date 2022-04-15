@@ -2,7 +2,7 @@ require('dotenv').config();
 const fetch = require('node-fetch');
 const { Pool, Client } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_STAGING_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -32,6 +32,12 @@ const makeFollowsTable = 'CREATE TABLE IF NOT EXISTS follows ( \
   FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE \
   )';
 
+const makeLimitTable = 'CREATE TABLE IF NOT EXISTS limits ( \
+  row_key BIGINT PRIMARY KEY, \
+  usage BIGINT, \
+  refresh_time BIGINT \
+  )';
+
 
 async function createTables() {
   //Makes all tables if they don't exist for postgresql.
@@ -49,6 +55,10 @@ async function createTables() {
     pool.query(makeFollowsTable)
       .then(console.log('follows table made successfully'))
       .catch(err => console.log(err)),
+
+    pool.query(makeLimitTable)
+      .then(console.log('limits table made successfully'))
+      .catch(err => console.log(err)),
   ];
   await Promise.all(promises);
 }
@@ -56,13 +66,17 @@ async function createTables() {
 
 function getDexTokens() {
   //Logins in using Mangadex credentials.
+  await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/login';
   const username = process.env.MANGA_USERNAME;
   const password = process.env.MANGA_PASSWORD;
   let data = { username: username, password: password };
   let options = {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(data)
   };
 
@@ -76,11 +90,15 @@ function getDexTokens() {
 
 function refreshSession(refreshToken) {
   //Refreshes the session token using the refreshToken.
+  await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/refresh';
   let data = { token: refreshToken };
   let options = {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(data)
   };
 
@@ -269,6 +287,28 @@ function getUsersToMention(mangaId, guildId) {
   }).catch(err => console.log(err));
 }
 
+async function checkLimit() {
+  //Checks amount of times mangaDex API has been hit in the last 2 seconds
+  //awaits if over limit.
+  const selectString = 'SELECT usage FROM limits WHERE row_key = 0;';
+  const rows = (await pool.query(selectString).catch(err => console.log(err))).rows;
+  const now = Date.now();
+  if (rows.length == 0) { //Insert new row
+    const insertString = `INSERT INTO limits VALUES (0, 0, ${now});`;
+    await pool.query(insertString).catch(err => console.log(err));
+  }
+  else if (rows[0].usage >= 5 || now - rows[0].refresh_time >= 2000 ) { //Update then await 2 seconds
+    const updateString = `UPDATE limits SET usage = 0, refresh_time = ${now} WHERE row_key = 0;`;
+    await pool.query(updateString).catch(err => console.log(err));
+    console.log('Hit limit, waiting 2 seconds');
+    setTimeout(()=>{}, 2000);
+  }
+  else { //Increment usage
+    const incrementString = `UPDATE limits SET usage = ${parseInt(rows[0].usage) + 1} WHERE row_key = 0;`;
+    await pool.query(incrementString).catch(err => console.log(err));
+  }
+}
+
 
 module.exports = {
   createTables,
@@ -281,5 +321,6 @@ module.exports = {
   delFollow,
   getMangaCount,
   getFollowedMangas,
-  getUsersToMention
+  getUsersToMention,
+  checkLimit
 };

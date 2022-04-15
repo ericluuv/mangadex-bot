@@ -1,9 +1,10 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
-const { getSessionToken } = require('./postgres.js');
+const { getSessionToken, checkLimit } = require('./postgres.js');
 
 async function updateMangaList(mangaId, listId, method) {
   //Adds or deletes manga from the mangaList via it's ID.
+  await checkLimit();
   const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${listId}`;
   const token = await getSessionToken();
   let options = {
@@ -52,6 +53,7 @@ function getListId(intOptions) {
 
 async function getMangaUpdates(listId) {
   //Returns an array of all mangas that have been updated in the last 20 minutes.
+  await checkLimit();
   const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
   let url = process.env.MANGADEX_URL + `/list/${listId}/feed`
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
@@ -67,10 +69,7 @@ async function getMangaUpdates(listId) {
   let res;
   try {
     res = await fetch(url, options).catch(err => console.log(err));
-    const json = await res.json().catch(err => {
-      console.log('err', err);
-      console.log('err.msg', err.message);
-    });
+    const json = await res.json();
 
     if (json?.result === 'ok') {
       const toReturn = []
@@ -110,6 +109,7 @@ function getRelId(relationships, type) {
 
 async function getScanGroup(update) {
   //Grabs scanlation group name from relationships attribute, null if no value.
+  await checkLimit();
   const id = getRelId(update?.relationships, 'scanlation_group');
   if (id === '') {
     console.log('No suitable id found in getScanGroup', update);
@@ -135,6 +135,7 @@ async function getScanGroup(update) {
 
 async function getMangaData(update, id = '') {
   //Gets mangaData from update.
+  await checkLimit();
   if (id === '') {
     id = getRelId(update?.relationships, 'manga');
     if (id === '') {
@@ -160,6 +161,7 @@ async function getMangaData(update, id = '') {
 
 async function getAuthorName(mangaData) {
   //Gets mangaData from update.
+  await checkLimit();
   const id = getRelId(mangaData?.relationships, 'author');
   if (id === '') {
     console.log('No suitable id found in getAuthorName', mangaData);
@@ -185,6 +187,7 @@ async function getAuthorName(mangaData) {
 
 async function getCoverFileName(mangaData) {
   //Gets mangaData from update.
+  await checkLimit();
   const id = getRelId(mangaData?.relationships, 'cover_art');
   if (id === '') {
     console.log('No suitable id found in getCoverFileName', mangaData);
@@ -239,6 +242,7 @@ async function processUpdates(updates) {
 
 async function createList(listName) {
   //Creates a new list for a server.
+  await checkLimit();
   const url = `${process.env.MANGADEX_URL}/list`;
   const bod = {
     name: listName,
@@ -296,6 +300,7 @@ async function getMangaEmbeds(mangaIds) {
 
 async function getMangaIdsFromList(listId) {
   //Gets all mangaIds from a listId.
+  await checkLimit();
   const url = process.env.MANGADEX_URL + `/list/${listId}`;
   let options = {
     method: 'GET',
