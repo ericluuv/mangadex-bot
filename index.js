@@ -14,7 +14,7 @@ const fetch = require('node-fetch');
 const { 
   createCommands, handleFollowCommand, handleUnfollowCommand, 
   handleSetCommand, handleListCommand, handleMigrateCommand
-} = require('./commands.js')
+} = require('./commands.js');
 
 // postgreSQL 
 const { createTables, getGuildTable, getUsersToMention } = require('./postgres.js');

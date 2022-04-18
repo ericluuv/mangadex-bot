@@ -23,16 +23,17 @@ async function updateMangaList(mangaId, listId, method) {
 }
 
 
-function getTitleInfo(intOptions) {
-  // Get mangaID and title from the URL, returns empty string if invalid URL.
+function getMangaId(intOptions) {
+  // Get mangaID from the URL, returns empty string if invalid URL.
   const input = intOptions.getString('url');
-  if (input.slice(0, 27) !== 'https://mangadex.org/title/') {
-    console.log('Invalid URL', input);
-    return ['', ''];
+  if (input.slice(0, 27) === 'https://mangadex.org/title/') {
+    return input.slice(27).split('/')[0];
   }
-  const toReturn = input.slice(27).split('/');
-  toReturn[1] = toReturn.length > 1 ? toReturn[1].split('-').join(' ') : 'Unknown';
-  return toReturn;
+  else if (input.slice(0, 29) === 'https://mangadex.org/chapter/') {
+    return input.slice(29).split('/')[0];
+  }
+  console.log('Invalid URL', input);
+  return [''];
 }
 
 
@@ -66,35 +67,27 @@ async function getMangaUpdates(listId) {
     }
   };
 
-  let res;
-  try {
-    res = await fetch(url, options).catch(err => console.log(err));
-    const json = await res.json();
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
 
-    if (json?.result === 'ok') {
-      const toReturn = []
-      const uniques = new Set();
-      for (const update of json.data) {
-        if (!uniques.has(update.id)) {
-          uniques.add(update.id);
-          toReturn.push(update);
-        }
+  if (json?.result === 'ok') {
+    const toReturn = []
+    const uniques = new Set();
+    for (const update of json.data) {
+      if (!uniques.has(update.id)) {
+        uniques.add(update.id);
+        toReturn.push(update);
       }
-      for (const c of toReturn) {
-        console.log('Returned data items', c);
-      }
-      return toReturn;
     }
-    else {
-      console.log('getMangaUpdates() failed.', json);
-      return [];
+    for (const c of toReturn) {
+      console.log('Returned data items', c);
     }
+    return toReturn;
   }
-  catch (err) {
-    console.log(err);
-    console.log('the res when crashing', res);
+  else {
+    console.log('getMangaUpdates() failed.', json);
+    return [];
   }
-  return [];
 }
 
 
@@ -321,12 +314,17 @@ async function getMangaIdsFromList(listId) {
 
 
 module.exports = {
-  getTitleInfo,
+  getMangaId,
   updateMangaList,
   getMangaUpdates,
   processUpdates,
   createList,
   getMangaEmbeds,
   getMangaIdsFromList,
-  getListId
+  getListId,
+  getMangaData
 };
+
+console.log(getMangaId(
+  'https://mangadex.org/chapter/afe3cb06-42e3-45b9-b2fe-eae65a6b1ab9/2'
+));

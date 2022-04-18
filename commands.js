@@ -3,8 +3,8 @@ const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
 const {
-  updateMangaList, getTitleInfo, createList, getMangaEmbeds,
-  getMangaIdsFromList, getListId
+  updateMangaList, getMangaId, createList, getMangaEmbeds,
+  getMangaIdsFromList, getListId, getMangaData
 } = require('./manga.js');
 
 const {
@@ -94,10 +94,9 @@ function checkGuild(guildId) {
 async function handleFollowCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
-  const info = getTitleInfo(interaction.options);
   const userId = interaction.user.id;
-  const mangaId = info[0];
-  const mangaTitle = info[1];
+  const mangaId = getMangaId(interaction.options);
+  const mangaTitle = (await getMangaData('', mangaId))?.attributes?.title?.en || 'Unknown Title';
   const guildStatus = await checkGuild(guildId);
   if (mangaId === '') {
     await interaction.editReply({ content: 'Invalid URL.' });
@@ -128,10 +127,9 @@ async function handleFollowCommand(interaction) {
 async function handleUnfollowCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
-  const info = getTitleInfo(interaction.options);
   const userId = interaction.user.id;
-  const mangaId = info[0];
-  const mangaTitle = info[1];
+  const mangaId = getMangaId(interaction.options);
+  const mangaTitle = (await getMangaData('', mangaId))?.attributes?.title?.en || 'Unknown Title';
   const guildStatus = await checkGuild(guildId);
   if (mangaId === '') {
     await interaction.editReply({ content: 'Invalid URL.' });
@@ -148,7 +146,6 @@ async function handleUnfollowCommand(interaction) {
   }
   else {
     const mangaCount = await getMangaCount(mangaId);
-    console.log('THE MANGA COUNT', mangaCount);
     if (mangaCount === '0') {
       const listId = (await getGuildRow(guildId))?.[0]?.list_id;
       await updateMangaList(mangaId, listId, 'DELETE');

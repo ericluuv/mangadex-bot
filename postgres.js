@@ -73,18 +73,17 @@ async function getDexTokens() {
   let data = { username: username, password: password };
   let options = {
     method: 'POST',
-    headers: { 
+    headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(data)
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.token; }
-    console.log('getDexTokens() failed.', json);
-  }).catch(err => console.log(err));
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.token; }
+  console.log('getDexTokens() failed.', json);
 }
 
 
@@ -102,11 +101,10 @@ async function refreshSession(refreshToken) {
     body: JSON.stringify(data)
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.token.session; }
-    console.log('refreshSession() failed.', json);
-  }).catch(err => console.log(err));
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.token.session; }
+  console.log('refreshSession() failed.', json);
 }
 
 
@@ -199,7 +197,7 @@ function insertGuildRow(guildId, listId, channelId) {
 }
 
 
-async function updateChannelId(guildId, channelId) {
+function updateChannelId(guildId, channelId) {
   //Updates channelId based on guildId and channelId.
   const updateString = `UPDATE guilds SET channel_id = '${channelId}' WHERE guild_id = '${guildId}';`;
   return pool.query(updateString).then(res => {
@@ -290,18 +288,20 @@ function getUsersToMention(mangaId, guildId) {
 async function checkLimit() {
   //Checks amount of times mangaDex API has been hit in the last 2 seconds
   //awaits if over limit.
-  const selectString = 'SELECT usage FROM limits WHERE row_key = 0;';
+  const selectString = 'SELECT * FROM limits WHERE row_key = 0;';
   const rows = (await pool.query(selectString).catch(err => console.log(err))).rows;
   const now = Date.now();
+  const refresh = now - rows?.[0]?.refresh_time >= 2000;
+
   if (rows.length == 0) { //Insert new row
     const insertString = `INSERT INTO limits VALUES (0, 0, ${now});`;
     await pool.query(insertString).catch(err => console.log(err));
   }
-  else if (rows[0].usage >= 5 || now - rows[0].refresh_time >= 2000 ) { //Update then await 2 seconds
+  else if (rows[0].usage >= 5 || refresh) { //Update then await 2 seconds
     const updateString = `UPDATE limits SET usage = 0, refresh_time = ${now} WHERE row_key = 0;`;
     await pool.query(updateString).catch(err => console.log(err));
-    console.log('Hit limit, waiting 2 seconds');
-    setTimeout(()=>{}, 2000);
+    if (!refresh) { console.log('Hit limit, timing out for 2 seconds', refresh); }
+    setTimeout(() => { }, 2000);
   }
   else { //Increment usage
     const incrementString = `UPDATE limits SET usage = ${parseInt(rows[0].usage) + 1} WHERE row_key = 0;`;
