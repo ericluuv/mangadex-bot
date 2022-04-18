@@ -1,10 +1,11 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const { MessageEmbed } = require('discord.js');
 
 const {
-  updateMangaList, getMangaId, createList, getMangaEmbeds,
-  getMangaIdsFromList, getListId, getMangaData
+  updateMangaList, getMangaId, createList, getFieldsFromMangaIds,
+  getMangaIdsFromList, getListId, getMangaData, getListData
 } = require('./manga.js');
 
 const {
@@ -184,10 +185,14 @@ async function handleListCommand(interaction) {
   }
 
   const mangaIds = await getFollowedMangas(guildId, userId);
-  const embeds = await Promise.all(await getMangaEmbeds(mangaIds));
+  await interaction.editReply({content: `Processing ${mangaIds.length} mangas...`});
+  const fields = await getFieldsFromMangaIds(mangaIds);
 
-  await interaction.editReply({ content: `Getting ${embeds.length} Mangas` });
-  await Promise.all(embeds.map(embed => interaction.channel.send(embed)));
+  await interaction.editReply({ content: 'Done!', embeds: [{
+    'title': `${interaction.user.username}'s List`,
+    'description': `Following ${fields.length} mangas`,
+    'fields': fields
+  }] });
 }
 
 
@@ -200,16 +205,16 @@ async function handleMigrateCommand(interaction) {
     await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
     return;
   }
-  const listInfo = getListId(interaction.options);
-  const listId = listInfo[0];
-  const listTitle = listInfo[1];
+  const listId = getListId(interaction.options);
   if (listId === '') {
-    await interaction.deferReply({ content: 'Invalid URL.' });
+    await interaction.editReply({ content: 'Invalid URL.' });
     return;
   }
+  const listTitle = (await getListData(listId))?.attributes?.name || 'Unkown Title';
   const mangaIds = await getMangaIdsFromList(listId);
   const newListId = (await getGuildRow(guildId))?.[0]?.list_id;
   
+  await interaction.editReply({ content: `Migrating ${mangaIds.length} mangas...`});
   for (const mangaId of mangaIds) {
     await updateMangaList(mangaId, newListId, 'POST');
     await insertFollow(userId, mangaId, guildId);

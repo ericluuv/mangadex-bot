@@ -40,7 +40,7 @@ async function pollUpdates(previousUrls) {
         const mangaId = toEmbed.manga_id;
         await bot.channels.cache.get(channelId).send({embeds: [toEmbed.toSend]});
         const users = await getUsersToMention(mangaId, guildId);
-        await bot.channels.cache.get(channelId).send({content: `UPDATE FOR ${users}`});
+        await bot.channels.cache.get(channelId).send({content: `Update for ${users}`});
       }
     }
   }

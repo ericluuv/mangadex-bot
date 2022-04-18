@@ -29,26 +29,19 @@ function getMangaId(intOptions) {
   if (input.slice(0, 27) === 'https://mangadex.org/title/') {
     return input.slice(27).split('/')[0];
   }
-  else if (input.slice(0, 29) === 'https://mangadex.org/chapter/') {
-    return input.slice(29).split('/')[0];
-  }
   console.log('Invalid URL', input);
-  return [''];
+  return '';
 }
 
 
 function getListId(intOptions) {
   //Grabs listID and list name from listUrl.
   const input = intOptions.getString('url');
-  const toReturn = [];
   if (input.slice(0, 26) !== 'https://mangadex.org/list/') {
     console.log('Invalid URL', input);
-    return ['', ''];
+    return '';
   }
-  toReturn[0] = input.slice(26, input.indexOf('/', 26));
-  if (input.includes('?')) { toReturn[1] = input.slice(input.indexOf('/', 26) + 1, input.indexOf('?')); }
-  else { toReturn[1] = input.slice(input.indexOf('/', 26) + 1); }
-  return toReturn;
+  return input.slice(26).split('/')[0];
 }
 
 
@@ -87,6 +80,31 @@ async function getMangaUpdates(listId) {
   else {
     console.log('getMangaUpdates() failed.', json);
     return [];
+  }
+}
+
+
+async function getListData(listId) {
+  //Gets list data from mangadex endpoint.
+  await checkLimit();
+  const url = `${process.env.MANGADEX_URL}/list/${listId}`;
+  const options = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
+  };
+
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') {
+    console.log('List data successful');
+    return json.data;
+  }
+  else {
+    console.log('List Data not successful');
+    return json;
   }
 }
 
@@ -267,27 +285,24 @@ async function createList(listName) {
 }
 
 
-async function getMangaEmbeds(mangaIds) {
-  //Input of mangaIds, gets manga data and returns embeds for all of them.
-  const toPromise = mangaIds.map(mangaId => getMangaData('', mangaId));
-  const results = await Promise.all(toPromise);
-  return results.map(async mangaData => {
+async function getFieldsFromMangaIds(mangaIds) {
+  //Input of mangaIds, returns fields array for discord messageEmbed with hyperlinks.
+  const results = [];
+  for (const mangaId of mangaIds) {
+    results.push(await getMangaData('', mangaId));
+  }
+  const fields = [];
+  for (const mangaData of results) {
     const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
-    const coverFileName = await getCoverFileName(mangaData);
-    const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
     const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
-    const embed = {
-      'embeds': [{
-        'title': `${mangaTitle}`,
-        'description': `Author: ${authorName}`,
-        'color': 16742144,
-        //'footer': { 'text': 'That New New' },
-        'url': `https://mangadex.org/title/${mangaData?.id}/`,
-        'thumbnail': { 'url': thumbnailUrl }
-      }]
+    const temp = {
+      'name': `${mangaTitle}`,
+      'value': `Author: ${authorName}
+      [MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`,
     };
-    return embed;
-  });
+    fields.push(temp);
+  }
+  return fields;
 }
 
 
@@ -319,12 +334,9 @@ module.exports = {
   getMangaUpdates,
   processUpdates,
   createList,
-  getMangaEmbeds,
+  getFieldsFromMangaIds,
   getMangaIdsFromList,
   getListId,
-  getMangaData
+  getMangaData,
+  getListData
 };
-
-console.log(getMangaId(
-  'https://mangadex.org/chapter/afe3cb06-42e3-45b9-b2fe-eae65a6b1ab9/2'
-));
