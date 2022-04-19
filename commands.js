@@ -1,7 +1,8 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed } = require('discord.js');
+const { MessageButton, MessageEmbed } = require('discord.js');
+const paginationEmbed = require('discordjs-button-pagination');
 
 const {
   updateMangaList, getMangaId, createList, getFieldsFromMangaIds,
@@ -12,6 +13,7 @@ const {
   insertFollow, delFollow, getGuildRow, getMangaCount,
   updateChannelId, insertGuildRow, getFollowedMangas, getGuildTable
 } = require('./postgres.js');
+
 
 const followCommand = new SlashCommandBuilder()
   .setName('follow')
@@ -108,7 +110,7 @@ async function handleFollowCommand(interaction) {
     return;
   }
   const listId = (await getGuildRow(guildId))[0]?.list_id;
-  
+
   const status = await updateMangaList(mangaId, listId, 'POST');
   if (status !== 'ok') {
     await interaction.editReply({ content: 'Mangadex API error with the list.' });
@@ -185,14 +187,39 @@ async function handleListCommand(interaction) {
   }
 
   const mangaIds = await getFollowedMangas(guildId, userId);
-  await interaction.editReply({content: `Processing ${mangaIds.length} mangas...`});
+  await interaction.editReply({ content: `Processing ${mangaIds.length} mangas...` });
   const fields = await getFieldsFromMangaIds(mangaIds);
+  const groupedFields = [];
+  for (let i = 0; i < fields.length; i += 10) {
+    groupedFields.push(fields.slice(i, i + 10));
+  }
 
-  await interaction.editReply({ content: 'Done!', embeds: [{
-    'title': `${interaction.user.username}'s List`,
-    'description': `Following ${fields.length} mangas`,
-    'fields': fields
-  }] });
+  const button1 = new MessageButton()
+  .setCustomId("previousbtn")
+  .setStyle("SECONDARY")
+  .setEmoji('⏮️');
+
+  const button2 = new MessageButton()
+    .setCustomId("nextbtn")
+    .setStyle("SECONDARY")
+    .setEmoji('⏭️');
+
+
+  let counter = 0;
+  const embeds = groupedFields.map(groupedField => {
+    counter += groupedField.length;
+    return new MessageEmbed()
+      .setTitle(`${interaction.user.username}'s List`)
+      .setDescription(`${counter} / ${fields.length}`)
+      .setFields(groupedField);
+  })
+  await interaction.editReply({ content: 'Done!' });
+  if (embeds.length === 0) {
+    await interaction.channel.send({ content: 'Following 0 Mangas' });
+  }
+  else {
+    await paginationEmbed(interaction, embeds, [button1, button2], 60000);
+  }
 }
 
 
@@ -213,11 +240,11 @@ async function handleMigrateCommand(interaction) {
   const listTitle = (await getListData(listId))?.attributes?.name || 'Unkown Title';
   const mangaIds = await getMangaIdsFromList(listId);
   const newListId = (await getGuildRow(guildId))?.[0]?.list_id;
-  
-  await interaction.editReply({ content: `Migrating ${mangaIds.length} mangas...`});
+
+  await interaction.editReply({ content: `Migrating ${mangaIds.length} mangas...` });
   for (const mangaId of mangaIds) {
-    await updateMangaList(mangaId, newListId, 'POST');
-    await insertFollow(userId, mangaId, guildId);
+    await Promise.all([updateMangaList(mangaId, newListId, 'POST'),
+    insertFollow(userId, mangaId, guildId)]);
   }
 
   await interaction.editReply({ content: `Migrated ${mangaIds.length} mangas from ${listTitle} to server list.` });

@@ -3,7 +3,7 @@
 require('dotenv').config();
 // discord API
 const Discord = require('discord.js');
-const { MessageAttachment, MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageButton } = require('discord.js');
 const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PRESENCES"] });
 bot.login(process.env.DISCORD_TOKEN);
 
@@ -11,8 +11,8 @@ bot.login(process.env.DISCORD_TOKEN);
 const fetch = require('node-fetch');
 
 //Commands
-const { 
-  createCommands, handleFollowCommand, handleUnfollowCommand, 
+const {
+  createCommands, handleFollowCommand, handleUnfollowCommand,
   handleSetCommand, handleListCommand, handleMigrateCommand
 } = require('./commands.js');
 
@@ -38,13 +38,13 @@ async function pollUpdates(previousUrls) {
       if (!previousUrls.has(url)) {
         newSet.add(url);
         const mangaId = toEmbed.manga_id;
-        await bot.channels.cache.get(channelId).send({embeds: [toEmbed.toSend]});
+        await bot.channels.cache.get(channelId).send({ embeds: [toEmbed.toSend] });
         const users = await getUsersToMention(mangaId, guildId);
-        await bot.channels.cache.get(channelId).send({content: `Update for ${users}`});
+        await bot.channels.cache.get(channelId).send({ content: `Update for ${users}` });
       }
     }
   }
-  setTimeout(function(){pollUpdates(newSet)}, 600000);
+  setTimeout(function () { pollUpdates(newSet) }, 600000);
 }
 
 
@@ -76,7 +76,7 @@ bot.on('interactionCreate', async interaction => {
   else if (interaction.commandName === 'list') {
     await handleListCommand(interaction);
   }
-  
+
   else if (interaction.commandName === 'migrate') {
     await handleMigrateCommand(interaction);
   }

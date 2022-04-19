@@ -292,6 +292,7 @@ async function getFieldsFromMangaIds(mangaIds) {
     results.push(await getMangaData('', mangaId));
   }
   const fields = [];
+  /*
   for (const mangaData of results) {
     const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
     const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
@@ -299,6 +300,14 @@ async function getFieldsFromMangaIds(mangaIds) {
       'name': `${mangaTitle}`,
       'value': `Author: ${authorName}
       [MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`,
+    };
+    fields.push(temp);
+  }*/
+  for (const mangaData of results) {
+    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+    const temp = {
+      'name': `${mangaTitle}`,
+      'value': `[MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`
     };
     fields.push(temp);
   }

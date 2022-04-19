@@ -38,12 +38,20 @@ const makeLimitTable = 'CREATE TABLE IF NOT EXISTS limits ( \
   refresh_time BIGINT \
   )';
 
+  /*
+const makeMangaTable = 'CREATE TABLE IF NOT EXISTS mangas ( \
+  manga_id TEXT, \
+  manga_title TEXT, \
+  author_name TEXT, \
+  PRIMARY KEY (manga_id) \
+  )';*/
+
 
 async function createTables() {
   //Makes all tables if they don't exist for postgresql.
   const promises = [
     pool.connect().then(console.log('PostgreSQL connected.')),
-    
+
     pool.query(makeTokensTable)
       .then(console.log('dex_tokens table made successfully'))
       .catch(err => console.log(err)),
@@ -300,7 +308,7 @@ async function checkLimit() {
   else if (rows[0].usage >= 5 || refresh) { //Update then await 1.2 seconds
     const updateString = `UPDATE limits SET usage = 0, refresh_time = ${now} WHERE row_key = 0;`;
     await pool.query(updateString).catch(err => console.log(err));
-    if (!refresh) { 
+    if (!refresh) {
       console.log('Hit limit, timing out for 1.2 seconds');
       const wait = await new Promise(resolve => setTimeout(resolve, 1200));
     }
