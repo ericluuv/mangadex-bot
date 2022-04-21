@@ -1,197 +1,113 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
+const { getSessionToken, checkLimit } = require('./postgres.js');
 
-
-function getDexTokens() {
-  //Logins in using Mangadex credentials.
-  const url = process.env.MANGADEX_URL + '/auth/login';
-  const username = process.env.MANGA_USERNAME;
-  const password = process.env.MANGA_PASSWORD;
-  let data = { username: username, password: password };
-  let options = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  };
-
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.token; }
-    console.log('getDexTokens() failed.', json);
-  }).catch((err) => {
-    console.log(err);
-    return;
-  });
-}
-
-
-function refreshSession(refreshToken) {
-  //Refreshes the session token using the refreshToken.
-  const url = process.env.MANGADEX_URL + '/auth/refresh';
-  let data = { token: refreshToken };
-  let options = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  };
-
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.token.session; }
-    console.log('refreshSession() failed.', json);
-  }).catch((err) => {
-    console.log(err);
-    return;
-  });
-}
-
-
-async function updateTokens(sessionToken, refreshToken, pool) {
-  //Updates tokens in the database.
-  const now = Date.now();
-  let temp = [];
-  if (sessionToken !== '') {
-    let updateStr = `UPDATE dex_tokens SET session_token = '${sessionToken}', session_date = ${now} WHERE da_key = 0`;
-    temp.push(pool.query(updateStr, (err, res) => {
-      if (err) { console.log(err); }
-      console.log('Updated sessionToken in database.');
-    }));
-  }
-
-  if (refreshToken !== '') {
-    let updateStr = `UPDATE dex_tokens SET refresh_token = '${refreshToken}', refresh_date = ${now} WHERE da_key = 0`;
-    temp.push(pool.query(updateStr, (err, res) => {
-      if (err) { console.log(err); }
-      console.log('Updated refreshToken in database');
-    }));
-    return Promise.all(temp);
-  }
-}
-
-
-async function insertTokens(sessionToken, refreshToken, pool) {
-  //Inserts tokens into the database, used when table is empty.
-  const now = Date.now();
-  let insertStr = `INSERT INTO dex_tokens VALUES (0, '${sessionToken}', '${refreshToken}', `;
-  insertStr += `${now}, ${now});`;
-
-  return pool.query(insertStr, (err1, res1) => {
-    if (err1) { console.log(err1); }
-    console.log("Inserted new tokens into dex_tokens");
-  });
-}
-
-
-async function getSessionToken(pool) {
-  //Grabs session token from database, populates the table if necessary.
-  //Also refreshes the session token if its been > 14 minutes since last made
-  //Refreshes refresh token if its been more than 1 month since last made
-  const result = await pool.query('SELECT * from dex_tokens');
-  const rows = result.rows;
-  if (rows.length === 0 || Date.now() - rows[0].refresh_date >= 1415600000) {
-    // table is empty, or both tokens are unusable 
-    let tokens = await getDexTokens();
-    if (rows.length === 0) {
-      await insertTokens(tokens.session, tokens.refresh, pool);
-    }
-    else {
-      await updateTokens(tokens.session, tokens.refresh, pool);
-    }
-  }
-  else {
-    //Just grab it and check sessionDate
-    if (Date.now() - rows[0].session_date >= 840000) {
-      //Refresh
-      const refreshed = await refreshSession(rows[0].refresh_token);
-      console.log('Refreshed token');
-      const temp = await updateTokens(refreshed, '', pool);
-    }
-  }
-  return pool.query('SELECT * from dex_tokens').then((res) => {
-    return res.rows[0].session_token;
-  })
-}
-
-
-async function updateMangaList(mangaId, method, pool) {
+async function updateMangaList(mangaId, listId, method) {
   //Adds or deletes manga from the mangaList via it's ID.
-  const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${process.env.LIST_ID}`;
-  let data = {
-    id: mangaId,
-    listId: process.env.LIST_ID
-  };
-
-  const token = await getSessionToken(pool);
-  console.log(`Some of bearer token: ${token.slice(0, 10)}`);
+  await checkLimit();
+  const url = process.env.MANGADEX_URL + `/manga/${mangaId}/list/${listId}`;
+  const token = await getSessionToken();
   let options = {
     method: `${method}`,
     headers: {
+      'Accept': 'application/json',
       'Content-type': 'application/json',
       'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
+    }
   };
-
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
-    else { console.log(`add/deleteManga() unsuccessful`) };
-    return json;
-  }).catch((err) => {
-    console.log(err);
-    return;
-  });
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { console.log('add/deleteManga() successful'); }
+  else { console.log('add/deleteManga() unsuccessful', json) };
+  return json.result;
 }
 
 
-function getTitleInfo(intOptions) {
-  // Get mangaID and title from the URL, returns empty string if invalid URL.
+function getMangaId(intOptions) {
+  // Get mangaID from the URL, returns empty string if invalid URL.
   const input = intOptions.getString('url');
-  if (input.slice(0, 27) !== 'https://mangadex.org/title/') {
-    console.log('Invalid URL');
+  if (input.slice(0, 27) === 'https://mangadex.org/title/') {
+    return input.slice(27).split('/')[0];
+  }
+  console.log('Invalid URL', input);
+  return '';
+}
+
+
+function getListId(intOptions) {
+  //Grabs listID and list name from listUrl.
+  const input = intOptions.getString('url');
+  if (input.slice(0, 26) !== 'https://mangadex.org/list/') {
+    console.log('Invalid URL', input);
     return '';
   }
-  const toReturn = input.slice(27).split('/');
-  toReturn[1] = toReturn.length > 1 ? toReturn[1].split('-').join(' ') : 'Unknown';
-  return toReturn;
+  return input.slice(26).split('/')[0];
 }
 
 
-function getMangaUpdates() {
+async function getMangaUpdates(listId) {
   //Returns an array of all mangas that have been updated in the last 20 minutes.
+  await checkLimit();
   const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
-  let url = process.env.MANGADEX_URL + `/list/${process.env.LIST_ID}/feed`
+  let url = process.env.MANGADEX_URL + `/list/${listId}/feed`
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
     ;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') {
-      const toReturn = []
-      const uniques = new Set();
-      for (const update of json.data) {
-        if (!uniques.has(update.id)) {
-          uniques.add(update.id);
-          toReturn.push(update);
-        }
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+
+  if (json?.result === 'ok') {
+    const toReturn = []
+    const uniques = new Set();
+    for (const update of json.data) {
+      if (!uniques.has(update.id)) {
+        uniques.add(update.id);
+        toReturn.push(update);
       }
-      for (const c of toReturn) {
-        console.log('Returned data items', c);
-      }
-      return toReturn;
     }
-    else {
-      console.log('getMangaUpdates() failed.', json);
+    for (const c of toReturn) {
+      console.log('Returned data items', c);
     }
-  }).catch((err) => {
-    console.log(err);
+    return toReturn;
+  }
+  else {
+    console.log('getMangaUpdates() failed.', json);
     return [];
-  });
+  }
 }
+
+
+async function getListData(listId) {
+  //Gets list data from mangadex endpoint.
+  await checkLimit();
+  const url = `${process.env.MANGADEX_URL}/list/${listId}`;
+  const options = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
+  };
+
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') {
+    console.log('List data successful');
+    return json.data;
+  }
+  else {
+    console.log('List Data not successful');
+    return json;
+  }
+}
+
 
 function getRelId(relationships, type) {
   let id = '';
@@ -201,8 +117,10 @@ function getRelId(relationships, type) {
   return id;
 }
 
-function getScanGroup(update) {
+
+async function getScanGroup(update) {
   //Grabs scanlation group name from relationships attribute, null if no value.
+  await checkLimit();
   const id = getRelId(update?.relationships, 'scanlation_group');
   if (id === '') {
     console.log('No suitable id found in getScanGroup', update);
@@ -212,44 +130,49 @@ function getScanGroup(update) {
   const url = `${process.env.MANGADEX_URL}/group/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.data?.attributes?.name; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data?.attributes?.name; }
+  else { console.log(`URL: ${url} failed`, json); }
+
 }
 
-async function getMangaData(update) {
-  //Gets mangaData from update.
-  const id = getRelId(update?.relationships, 'manga');
-  if (id === '') {
-    console.log('No suitable id found in getMangaData', update);
-    return;
-  }
 
+async function getMangaData(update, id = '') {
+  //Gets mangaData from update.
+  await checkLimit();
+  if (id === '') {
+    id = getRelId(update?.relationships, 'manga');
+    if (id === '') {
+      console.log('No suitable id found in getMangaData', update);
+      return;
+    }
+  }
   const url = `${process.env.MANGADEX_URL}/manga/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.data; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data; }
+  else { console.log(`URL: ${url} failed`, json); }
 }
 
 
-function getAuthorName(mangaData) {
+async function getAuthorName(mangaData) {
   //Gets mangaData from update.
+  await checkLimit();
   const id = getRelId(mangaData?.relationships, 'author');
   if (id === '') {
     console.log('No suitable id found in getAuthorName', mangaData);
@@ -259,20 +182,23 @@ function getAuthorName(mangaData) {
   const url = `${process.env.MANGADEX_URL}/author/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.data?.attributes?.name; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options).catch(err => console(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data?.attributes?.name; }
+  else { console.log(`URL: ${url} failed`, json); }
+
 }
 
-function getCoverFileName(mangaData) {
+
+async function getCoverFileName(mangaData) {
   //Gets mangaData from update.
+  await checkLimit();
   const id = getRelId(mangaData?.relationships, 'cover_art');
   if (id === '') {
     console.log('No suitable id found in getCoverFileName', mangaData);
@@ -282,31 +208,34 @@ function getCoverFileName(mangaData) {
   const url = `${process.env.MANGADEX_URL}/cover/${id}`;
   const options = {
     method: 'GET',
-    headers: { 'Content-type': 'application/json' }
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
   };
 
-  return fetch(url, options).then(async (res) => {
-    const json = await res.json();
-    if (json.result === 'ok') { return json.data?.attributes?.fileName; }
-    else { console.log(`URL: ${url} failed`, json); }
-  }).catch((err) => {
-    console.log(err);
-  });
+  const res = await fetch(url, options);
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data?.attributes?.fileName; }
+  else { console.log(`URL: ${url} failed`, json); }
 }
 
+
 async function processUpdates(updates) {
+  //Returns the updates in an embed format for discord.
   const toReturn = [];
   for (const update of updates) {
     const mangaData = await getMangaData(update);
-    const scanGroup = (await getScanGroup(update)) || '';
-    const authorName = (await getAuthorName(mangaData)) || '';
+    const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
+    const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
     const coverFileName = await getCoverFileName(mangaData);
     const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
     const chapter = update?.attributes?.chapter || '?';
-    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+    let mangaTitle = mangaData?.attributes?.title; 
+    mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro']|| 'Unknown Title';
     const chapterTitle = update?.attributes?.title || '';
     const embed = {
-      'embeds': [{
+      'toSend': {
         'title': `Ch ${chapter} - ${mangaTitle}`,
         'description': `${chapterTitle}\nAuthor: ${authorName}\nGroup: ${scanGroup}`,
         'color': 16742144,
@@ -314,17 +243,111 @@ async function processUpdates(updates) {
         'url': `https://mangadex.org/chapter/${update?.id}`,
         'timestamp': update?.attributes?.createdAt,
         'thumbnail': { 'url': thumbnailUrl }
-      }]
+      },
+      'manga_id': mangaData.id
     };
     toReturn.push(embed);
-  }
+  };
   return toReturn;
 }
 
 
+async function createList(listName) {
+  //Creates a new list for a server.
+  await checkLimit();
+  const url = `${process.env.MANGADEX_URL}/list`;
+  const bod = {
+    name: listName,
+    visibility: 'public'
+  };
+  const token = await getSessionToken();
+  console.log(`Some of bearer token: ${token.slice(0, 10)}`);
+  const options = {
+    method: 'POST',
+    body: JSON.stringify(bod),
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  };
+
+
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') {
+    console.log(`${listName} successfully created`);
+    return json.data.id;
+  }
+  else {
+    console.log(`${listName} could not be created.`, json);
+  }
+
+}
+
+
+async function getFieldsFromMangaIds(mangaIds) {
+  //Input of mangaIds, returns fields array for discord messageEmbed with hyperlinks.
+  const results = [];
+  for (const mangaId of mangaIds) {
+    results.push(await getMangaData('', mangaId));
+  }
+  const fields = [];
+  /*
+  for (const mangaData of results) {
+    const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
+    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+    const temp = {
+      'name': `${mangaTitle}`,
+      'value': `Author: ${authorName}
+      [MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`,
+    };
+    fields.push(temp);
+  }*/
+  for (const mangaData of results) {
+    let mangaTitle = mangaData?.attributes?.title; 
+    mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro']|| 'Unknown Title';
+    const temp = {
+      'name': `${mangaTitle}`,
+      'value': `[MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`
+    };
+    fields.push(temp);
+  }
+  return fields;
+}
+
+
+async function getMangaIdsFromList(listId) {
+  //Gets all mangaIds from a listId.
+  await checkLimit();
+  const url = process.env.MANGADEX_URL + `/list/${listId}`;
+  let options = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Content-type': 'application/json'
+    }
+  };
+
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') {
+    console.log('getList() successful');
+  }
+  else { console.log('getList() unsuccessful', json) };
+  return json?.data?.relationships.filter(rel => rel.type === 'manga').map(rel => rel.id) || [];
+}
+
+
 module.exports = {
-  getTitleInfo,
+  getMangaId,
   updateMangaList,
   getMangaUpdates,
-  processUpdates
+  processUpdates,
+  createList,
+  getFieldsFromMangaIds,
+  getMangaIdsFromList,
+  getListId,
+  getMangaData,
+  getListData
 };
