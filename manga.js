@@ -231,7 +231,8 @@ async function processUpdates(updates) {
     const coverFileName = await getCoverFileName(mangaData);
     const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
     const chapter = update?.attributes?.chapter || '?';
-    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+    let mangaTitle = mangaData?.attributes?.title; 
+    mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro']|| 'Unknown Title';
     const chapterTitle = update?.attributes?.title || '';
     const embed = {
       'toSend': {
@@ -304,7 +305,8 @@ async function getFieldsFromMangaIds(mangaIds) {
     fields.push(temp);
   }*/
   for (const mangaData of results) {
-    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+    let mangaTitle = mangaData?.attributes?.title; 
+    mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro']|| 'Unknown Title';
     const temp = {
       'name': `${mangaTitle}`,
       'value': `[MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`
