@@ -17,7 +17,7 @@ const {
 } = require('./commands.js');
 
 // postgreSQL 
-const { createTables, getGuildTable, getUsersToMention } = require('./postgres.js');
+const { createTables, getGuildTable, getUsersToMention } = require('./postgres/postgres.js');
 
 //MagnaDex Stuff
 const { getMangaUpdates, processUpdates } = require('./manga.js');
@@ -38,9 +38,11 @@ async function pollUpdates(previousUrls) {
       if (!previousUrls.has(url)) {
         newSet.add(url);
         const mangaId = toEmbed.manga_id;
-        await bot.channels.cache.get(channelId).send({ embeds: [toEmbed.toSend] });
         const users = await getUsersToMention(mangaId, guildId);
-        await bot.channels.cache.get(channelId).send({ content: `Update for ${users}` });
+        await bot.channels.cache.get(channelId).send({ 
+          content: `Update for ${users}`, embeds: [toEmbed.toSend]
+        });
+        //await bot.channels.cache.get(channelId).send({ content: `Update for ${users}` });
       }
     }
   }

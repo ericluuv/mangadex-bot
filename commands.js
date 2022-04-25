@@ -9,10 +9,11 @@ const {
   getMangaIdsFromList, getListId, getMangaData, getListData
 } = require('./manga.js');
 
+
 const {
   insertFollow, delFollow, getGuildRow, getMangaCount,
   updateChannelId, insertGuildRow, getFollowedMangas, getGuildTable
-} = require('./postgres.js');
+} = require('./postgres/postgres.js');
 
 
 const followCommand = new SlashCommandBuilder()
@@ -118,6 +119,7 @@ async function handleFollowCommand(interaction) {
   else {
     const res = await insertFollow(userId, mangaId, guildId);
     if (res === 1) {
+      console.log(`${mangaTitle || mangaId} was inserted into list: ${listId}`);
       await interaction.editReply({ content: `Now following ${mangaTitle || mangaId}` });
     }
     else {
