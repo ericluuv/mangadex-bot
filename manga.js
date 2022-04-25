@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
-const { getSessionToken, checkLimit } = require('./postgres.js');
+const { getSessionToken, checkLimit } = require('./postgres/postgres.js');
+
 
 async function updateMangaList(mangaId, listId, method) {
   //Adds or deletes manga from the mangaList via it's ID.
@@ -171,7 +172,7 @@ async function getMangaData(update, id = '') {
 
 
 async function getAuthorName(mangaData) {
-  //Gets mangaData from update.
+  //Gets author name from the mangaData.
   await checkLimit();
   const id = getRelId(mangaData?.relationships, 'author');
   if (id === '') {
