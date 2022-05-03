@@ -26,4 +26,4 @@ async function checkLimit() {
   }
 }
 
-module.exports = { checkLimit: checkLimit }; 
+module.exports = { checkLimit }; 

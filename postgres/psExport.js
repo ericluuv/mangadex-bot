@@ -1,6 +1,3 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
 const { pool } = require('./psPool.js');
 const { checkLimit } = require('./limits.js');
 const { getSessionToken } = require('./dex_tokens.js');
