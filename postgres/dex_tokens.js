@@ -10,9 +10,10 @@ async function getDexTokens() {
   //Logins in using Mangadex credentials.
   await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/login';
-  const username = process.env.MANGA_USERNAME;
-  const password = process.env.MANGA_PASSWORD;
-  const data = { username: username, password: password };
+  const data = { 
+    username: process.env.MANGA_USERNAME, 
+    password: process.env.MANGA_PASSWORD
+  };
   const options = formatOptions('POST', '', data);
 
   const res = await fetch(url, options).catch(err => console.log(err));
@@ -36,7 +37,7 @@ async function refreshSession(refreshToken) {
 }
 
 
-async function updateTokens(sessionToken, refreshToken) {
+async function updateTokens(sessionToken = '', refreshToken = '') {
   //Updates tokens in the database.
   const now = Date.now();
   let temp = [];
@@ -114,6 +115,4 @@ async function getSessionToken() {
   return res.rows[0].session_token;
 }
 
-module.exports = {
-  getSessionToken: getSessionToken
-};
+module.exports = { getSessionToken };

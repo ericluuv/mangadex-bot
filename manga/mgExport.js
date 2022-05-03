@@ -1,7 +1,7 @@
 const { createList, getListData, updateMangaList, 
   getMangaIdsFromList, getListUpdates
  } = require('./list.js');
-const { getScanGroup, getAuthorName, getCoverFileName, getMangaData } = require('./helper.js');
+const { getScanGroup, getAuthorName, getCoverFileName, getMangaTitle, getMangaData } = require('./helper.js');
 
 
 async function processUpdates(updates) {
@@ -9,13 +9,12 @@ async function processUpdates(updates) {
   const toReturn = [];
   for (const update of updates) {
     const mangaData = await getMangaData(update);
+    const mangaTitle = await getMangaTitle(mangaData);
     const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
-    const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
+    const authorName = await getAuthorName(mangaData);
     const coverFileName = await getCoverFileName(mangaData);
     const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
     const chapter = update?.attributes?.chapter || '?';
-    let mangaTitle = mangaData?.attributes?.title; 
-    mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro']|| 'Unknown Title';
     const chapterTitle = update?.attributes?.title || '';
     const embed = {
       'toSend': {
@@ -37,28 +36,14 @@ async function processUpdates(updates) {
 
 async function getFieldsFromMangaIds(mangaIds) {
   //Input of mangaIds, returns fields array for discord messageEmbed with hyperlinks.
-  const results = [];
-  for (const mangaId of mangaIds) {
-    results.push(await getMangaData('', mangaId));
-  }
   const fields = [];
-  /*
-  for (const mangaData of results) {
-    const authorName = (await getAuthorName(mangaData)) || 'Unknown Author';
-    const mangaTitle = mangaData?.attributes?.title?.en || 'Unknown Title';
+  for (const mangaId of mangaIds) {
+    const authorName = await getAuthorName('', mangaId);
+    const mangaTitle = await getMangaTitle('', mangaId);
     const temp = {
       'name': `${mangaTitle}`,
       'value': `Author: ${authorName}
-      [MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`,
-    };
-    fields.push(temp);
-  }*/
-  for (const mangaData of results) {
-    let mangaTitle = mangaData?.attributes?.title; 
-    mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro']|| 'Unknown Title';
-    const temp = {
-      'name': `${mangaTitle}`,
-      'value': `[MangaDex Link](https://mangadex.org/title/${mangaData?.id}/)`
+      [MangaDex Link](https://mangadex.org/title/${mangaId}/)`,
     };
     fields.push(temp);
   }
@@ -67,5 +52,5 @@ async function getFieldsFromMangaIds(mangaIds) {
 
 module.exports = {
   createList, getListData, updateMangaList, getMangaIdsFromList,
-  processUpdates, getFieldsFromMangaIds, getListUpdates, getMangaData
-}
+  processUpdates, getFieldsFromMangaIds, getListUpdates, getMangaTitle
+};

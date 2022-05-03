@@ -7,7 +7,7 @@ const { formatOptions } = require('./options.js');
 
 const {
   updateMangaList, createList, getFieldsFromMangaIds,
-  getMangaIdsFromList, getMangaData, getListData
+  getMangaIdsFromList, getListData, getMangaTitle
 } = require('./manga/mgExport.js');
 
 
@@ -57,6 +57,7 @@ const global_url = `https://discord.com/api/v8/applications/${process.env.APPLIC
 
 
 async function getCurrentCommands() {
+  //Gets names of all global commands.
   const options = formatOptions('GET', `Bot ${process.env.DISCORD_TOKEN}`);
 
   const res = await fetch(global_url, options).catch(err => console.log(err));
@@ -66,6 +67,7 @@ async function getCurrentCommands() {
 
 
 async function createCommands() {
+  //Creates commands if they are not already made.
   const currents = await getCurrentCommands();
   for (const command of commands) {
     if (currents.includes(command.name)) { continue; }
@@ -77,49 +79,45 @@ async function createCommands() {
 }
 
 
-function checkGuild(guildId) {
-  //Returns true if the guild exists in the table, false if not.
-  return getGuildRow(guildId).then(res => Boolean(res?.length || 0));
+async function checkGuild(interaction) {
+  //Returns true if guild is in db, false if not. Also edits reply.
+  const guildId = interaction.guild.id;
+  const res = await getGuildRow(guildId).then(res => Boolean(res?.length || 0));
+  if (!res) { await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' }); }
+  return res;
 }
 
 
-function getMangaId(intOptions) {
-  // Get mangaID from the URL, returns empty string if invalid URL.
-  const input = intOptions.getString('url');
-  if (input.slice(0, 27) === 'https://mangadex.org/title/') {
-    return input.slice(27).split('/')[0];
+async function parseUrl(interaction, choice) {
+  //Returns relevant ID if interaction contains a valid Url, empty string if not. Also edits reply.
+  const input = interaction.options.getString('url');
+  if (choice === 'manga') { 
+    const res = input.slice(0, 27);
+    if (res === 'https://mangadex.org/title/') { return input.slice(27).split('/')[0]; }
+    else { await interaction.editReply({content: 'Invalid URL.'}); }
   }
-  console.log('Invalid URL', input);
+  else if (choice === 'list') {
+    const res = input.slice(0, 26);
+    if (res === 'https://mangadex.org/list/') { return input.slice(26).split('/')[0]; }
+    else { await interaction.editReply({content: 'Invalid URL.'}); }
+  }
+  else {
+    await interaction.editReply({content: 'Internal error in parseUrl.'});
+    console.log('Invalid choice inputted for checkUrl', choice);
+  }
   return '';
-}
-
-
-function getListId(intOptions) {
-  //Grabs listID from listUrl.
-  const input = intOptions.getString('url');
-  if (input.slice(0, 26) !== 'https://mangadex.org/list/') {
-    console.log('Invalid URL', input);
-    return '';
-  }
-  return input.slice(26).split('/')[0];
 }
 
 
 async function handleFollowCommand(interaction) {
   await interaction.deferReply();
+  const guildStatus = await checkGuild(interaction);
+  const mangaId = await parseUrl(interaction, 'manga');
+  if (!guildStatus || mangaId === '') { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
-  const mangaId = getMangaId(interaction.options);
-  const mangaTitle = (await getMangaData('', mangaId))?.attributes?.title?.en || 'Unknown Title';
-  const guildStatus = await checkGuild(guildId);
-  if (mangaId === '') {
-    await interaction.editReply({ content: 'Invalid URL.' });
-    return;
-  }
-  if (!guildStatus) {
-    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
-    return;
-  }
+
+  const mangaTitle = await getMangaTitle('', mangaId);
   const listId = (await getGuildRow(guildId))[0]?.list_id;
 
   const status = await updateMangaList(mangaId, listId, 'POST');
@@ -141,19 +139,12 @@ async function handleFollowCommand(interaction) {
 
 async function handleUnfollowCommand(interaction) {
   await interaction.deferReply();
+  const guildStatus = await checkGuild(interaction);
+  const mangaId = await parseUrl(interaction, 'manga');
+  if (!guildStatus || mangaId === '') { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
-  const mangaId = getMangaId(interaction.options);
-  const mangaTitle = (await getMangaData('', mangaId))?.attributes?.title?.en || 'Unknown Title';
-  const guildStatus = await checkGuild(guildId);
-  if (mangaId === '') {
-    await interaction.editReply({ content: 'Invalid URL.' });
-    return;
-  }
-  if (!guildStatus) {
-    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
-    return;
-  }
+  const mangaTitle = await getMangaTitle('', mangaId);
 
   const count = await delFollow(userId, mangaId, guildId);
   if (count === 0) {
@@ -195,11 +186,8 @@ async function handleListCommand(interaction) {
   await interaction.deferReply();
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
-  const guildStatus = await checkGuild(guildId);
-  if (!guildStatus) {
-    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
-    return;
-  }
+  const guildStatus = await checkGuild(interaction);
+  if (!guildStatus) { return; }
 
   const mangaIds = await getFollowedMangas(guildId, userId);
   await interaction.editReply({ content: `Processing ${mangaIds.length} mangas...` });
@@ -240,25 +228,22 @@ async function handleListCommand(interaction) {
 
 async function handleMigrateCommand(interaction) {
   await interaction.deferReply();
+  const guildStatus = await checkGuild(interaction);
+  const listId = await parseUrl(interaction, 'list');
+  if (!guildStatus || listId === '') { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
-  const guildStatus = await checkGuild(guildId);
-  if (!guildStatus) {
-    await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' });
-    return;
-  }
-  const listId = getListId(interaction.options);
-  if (listId === '') {
-    await interaction.editReply({ content: 'Invalid URL.' });
-    return;
-  }
+
   const listTitle = (await getListData(listId))?.attributes?.name || 'Unkown Title';
-  const mangaIds = await getMangaIdsFromList(listId);
-  const newListId = (await getGuildRow(guildId))?.[0]?.list_id;
+  const serverListId = (await getGuildRow(guildId))?.[0]?.list_id;
+  const currMangas = await getMangaIdsFromList(serverListId);
+  const mangaIds = (await getMangaIdsFromList(listId)).filter(mangaId => {
+    return !(currMangas.includes(mangaId));
+  });
 
   await interaction.editReply({ content: `Migrating ${mangaIds.length} mangas...` });
   for (const mangaId of mangaIds) {
-    await updateMangaList(mangaId, newListId, 'POST');
+    await updateMangaList(mangaId, serverListId, 'POST');
     await insertFollow(userId, mangaId, guildId);
   }
 
