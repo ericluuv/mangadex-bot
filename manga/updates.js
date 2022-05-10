@@ -15,7 +15,7 @@ async function filterUpdates(updates) {
     const existingChapters = await aggregateMangaChapters(mangaId);
     const chapter = update?.attributes?.chapter || '?';
 
-    if (!existingChapters?.[chapter]) { toReturn.push(update); }
+    if (existingChapters[chapter] === 1) { toReturn.push(update); }
     else { console.log('update that was filterd', update); }
   }
   return toReturn;
