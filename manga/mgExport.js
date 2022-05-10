@@ -11,7 +11,7 @@ async function getFieldsFromMangaIds(mangaIds) {
   const fields = [];
   for (const mangaId of mangaIds) {
     const authorName = await getAuthorName('', mangaId);
-    const mangaTitle = await getMangaTitle('', mangaId);
+    const mangaTitle = await getMangaTitle(mangaId);
     const temp = {
       'name': `${mangaTitle}`,
       'value': `Author: ${authorName}
