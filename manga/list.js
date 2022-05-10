@@ -78,24 +78,10 @@ async function getListUpdates(listId) {
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
     ;
   const options = formatOptions('GET');
-
   const res = await fetch(url, options).catch(err => console.log(err));
   const json = await res.json();
 
-  if (json?.result === 'ok') {
-    const toReturn = []
-    const uniques = new Set();
-    for (const update of json.data) {
-      if (!uniques.has(update.id)) {
-        uniques.add(update.id);
-        toReturn.push(update);
-      }
-    }
-    for (const c of toReturn) {
-      console.log('Returned data items', c);
-    }
-    return toReturn;
-  }
+  if (json?.result === 'ok') { return json.data; }
   else {
     console.log('getMangaUpdates() failed.', json);
     return [];
@@ -105,5 +91,5 @@ async function getListUpdates(listId) {
 
 module.exports = {
   createList, getListData, updateMangaList, getMangaIdsFromList, getListUpdates
-}
+};
 

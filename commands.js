@@ -117,7 +117,7 @@ async function handleFollowCommand(interaction) {
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
 
-  const mangaTitle = await getMangaTitle('', mangaId);
+  const mangaTitle = await getMangaTitle(mangaId);
   const listId = (await getGuildRow(guildId))[0]?.list_id;
 
   const status = await updateMangaList(mangaId, listId, 'POST');
@@ -127,7 +127,6 @@ async function handleFollowCommand(interaction) {
   else {
     const res = await insertFollow(userId, mangaId, guildId);
     if (res === 1) {
-      console.log(`${mangaTitle || mangaId} was inserted into list: ${listId}`);
       await interaction.editReply({ content: `Now following ${mangaTitle || mangaId}` });
     }
     else {
@@ -144,7 +143,7 @@ async function handleUnfollowCommand(interaction) {
   if (!guildStatus || mangaId === '') { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
-  const mangaTitle = await getMangaTitle('', mangaId);
+  const mangaTitle = await getMangaTitle(mangaId);
 
   const count = await delFollow(userId, mangaId, guildId);
   if (count === 0) {

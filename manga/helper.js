@@ -1,4 +1,4 @@
-const { checkLimit, getMangaDataRow, updateMangaTitle, updateAuthorName } = require('../postgres/psExport.js');
+const { checkLimit, getMangaDataRow, updateAuthorName } = require('../postgres/psExport.js');
 const { formatOptions } = require('../options.js');
 const fetch = require('node-fetch');
 
@@ -51,36 +51,11 @@ async function getCoverFileName(mangaData) {
 }
 
 
-async function getMangaData(update, id = '') {
-  //Gets mangaData from update or through an id.
-  if (id === '') {
-    id = getRelId(update?.relationships, 'manga');
-    if (id === '') {
-      console.log('No suitable id found in getMangaData', update);
-      return;
-    }
-  }
-  const url = `${process.env.MANGADEX_URL}/manga/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options).catch(err => console.log(err));
-  const json = await res.json();
-  if (json.result === 'ok') { return json.data; }
-  else { console.log(`URL: ${url} failed`, json); }
-}
-
-
 async function getAuthorName(mangaData, mangaId = '') {
   //Gets author name from the mangaData.
-  if (mangaId) {
-    const res = await getMangaDataRow(mangaId);
-    if (res?.author_name) { return res?.author_name; }
-    mangaData = await getMangaData('', mangaId);
-  }
-  else {
-    mangaId = mangaData?.id;
-  }
+  if (mangaData && !mangaId) { mangaId = mangaData?.id; }
+  const queryRes = await getMangaDataRow(mangaId);
+  if (queryRes?.author_name) { return queryRes?.author_name; }
 
   const id = getRelId(mangaData?.relationships, 'author');
   if (id === '') {
@@ -103,23 +78,7 @@ async function getAuthorName(mangaData, mangaId = '') {
 }
 
 
-async function getMangaTitle(mangaData, mangaId = '') {
-  //Queries table for mangaTitle. If not there, get's it from mangadex.
-  if (mangaId) {
-    const res = await getMangaDataRow(mangaId);
-    if (res?.manga_title) { return res?.manga_title; }
-    mangaData = await getMangaData('', mangaId);
-  }
-  else { mangaId = mangaData?.id; }
-
-  let mangaTitle = mangaData?.attributes?.title;
-  mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro'] || 'Unknown Title';
-  
-  await updateMangaTitle(mangaId, mangaTitle);
-  return mangaTitle;
-}
-
 
 module.exports = {
-  getScanGroup, getAuthorName, getCoverFileName, getMangaData, getMangaTitle
+  getScanGroup, getAuthorName, getCoverFileName, getRelId
 };

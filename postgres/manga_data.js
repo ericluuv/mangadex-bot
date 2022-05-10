@@ -31,7 +31,7 @@ async function updateMangaTitle(mangaId, mangaTitle) {
   mangaTitle = mangaTitle.replaceAll("'", "''");
   if (res) {
     const updateString = `UPDATE manga_data SET manga_title = '${mangaTitle}' WHERE manga_id = '${mangaId}';`;
-    return pool.query(updateString).then(res => {
+    await pool.query(updateString).then(res => {
       console.log(`Updated manga_title = ${mangaTitle} for ${mangaId}`);
     }).catch(err => console.log(err));
   }
@@ -46,7 +46,7 @@ async function updateAuthorName(mangaId, authorName) {
   const res = await getMangaDataRow(mangaId);
   if (res) {
     const updateString = `UPDATE manga_data SET author_name = '${authorName}' WHERE manga_id = '${mangaId}';`;
-    return pool.query(updateString).then(res => {
+    await pool.query(updateString).then(res => {
       console.log(`Updated author_name = ${authorName} for ${mangaId}`);
     }).catch(err => console.log(err));
   }

@@ -2,9 +2,7 @@ const { pool } = require('./psPool.js');
 const { checkLimit } = require('./limits.js');
 const { getSessionToken } = require('./dex_tokens.js');
 const { insertGuildRow, updateChannelId, getGuildTable, getGuildRow } = require('./guilds.js');
-const { insertFollow, delFollow, getMangaCount,
-  getFollowedMangas, getUsersToMention
-} = require('./follows.js');
+const { insertFollow, delFollow, getMangaCount, getFollowedMangas, getUsersToMention } = require('./follows.js');
 const { getMangaDataRow, updateMangaTitle, updateAuthorName } = require('./manga_data.js');
 
 //Session & Refresh token table
@@ -38,7 +36,6 @@ const makeLimitTable = 'CREATE TABLE IF NOT EXISTS limits ( \
   usage BIGINT, \
   refresh_time BIGINT \
   )';
-
 
 const makeMangaTable = 'CREATE TABLE IF NOT EXISTS manga_data ( \
   manga_id TEXT, \
