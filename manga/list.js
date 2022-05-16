@@ -66,7 +66,11 @@ async function updateMangaList(mangaId, listId, method) {
 async function getMangaIdsFromList(listId) {
   //Gets all mangaIds from a listId.
   const res = await getListData(listId);
-  return res?.relationships.filter(rel => rel.type === 'manga').map(rel => rel.id) || [];
+  const toReturn = [];
+  for (const rel of res?.relationships) {
+    if (rel?.type === 'manga') { toReturn.push(rel?.id); }
+  }
+  return toReturn;
 }
 
 
@@ -92,4 +96,3 @@ async function getListUpdates(listId) {
 module.exports = {
   createList, getListData, updateMangaList, getMangaIdsFromList, getListUpdates
 };
-

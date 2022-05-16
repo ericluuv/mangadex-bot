@@ -7,7 +7,7 @@ const dOptions = { method: 'DELETE', headers };
 const gOptions = { method: 'GET', headers };
 
 function formatOptions(method, auth = '', body = '') {
-  //Return options parameter for fetch(), puts token in if needed.
+  //Return options parameter for fetch(), puts token and body in if needed.
   let options;
   if (method === 'POST') { options = pOptions; }
   else if (method === 'DELETE') { options = dOptions; }

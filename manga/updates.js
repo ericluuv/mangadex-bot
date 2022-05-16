@@ -16,7 +16,7 @@ async function filterUpdates(updates) {
     const chapter = update?.attributes?.chapter || '?';
 
     if (existingChapters[chapter] === 1) { toReturn.push(update); }
-    else { console.log('update that was filterd', update); }
+    else { console.log('Update that was filered out\n', update); }
   }
   return toReturn;
 }

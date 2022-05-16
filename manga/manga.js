@@ -6,9 +6,9 @@ const fetch = require('node-fetch');
 
 async function getMangaData(update, id = '') {
   //Gets mangaData from update or through an id.
-  if (!id) {
+  if (id === '') {
     id = getRelId(update?.relationships, 'manga');
-    if (!id) {
+    if (id === '') {
       console.log('No suitable id found in getMangaData', update);
       return;
     }
@@ -39,6 +39,7 @@ async function getMangaTitle(mangaId) {
 
 
 async function aggregateMangaChapters(mangaId) {
+  //Gathers chapter numbers and their count.
   let url = `${process.env.MANGADEX_URL}/manga/${mangaId}/aggregate`;
   url += `?translatedLanguage[]=en`;
   const options = formatOptions('GET');
@@ -52,10 +53,12 @@ async function aggregateMangaChapters(mangaId) {
     const existingChapters = {};
     for (const volume of Object.values(json?.volumes)) {
       for (const chapterInfo of Object.values(volume?.chapters)) {
-        if (chapterInfo.chapter in existingChapters) {
-          existingChapters[chapterInfo.chapter] += 1;
+        const chapterNum = chapterInfo.chapter;
+        const count = chapterInfo.count;
+        if (chapterNum in existingChapters) {
+          existingChapters[chapterNum] += count;
         }
-        else { existingChapters[chapterInfo.chapter] = 1; }
+        else { existingChapters[chapterNum] = count; }
       }
     }
     return existingChapters;
@@ -69,6 +72,3 @@ async function aggregateMangaChapters(mangaId) {
 module.exports = {
   getMangaData, getMangaTitle, aggregateMangaChapters
 };
-
-
-
