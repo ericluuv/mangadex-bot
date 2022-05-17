@@ -7,7 +7,7 @@ async function filterUpdates(updates) {
   //Return chapters that are unique and aren't already posted in the manga.
   const toReturn = [], currUpdates = [];
   for (const update of updates) {
-    if (previous.includes(update?.id) || currUpdates.includes(update?.id)) {
+    if (previous.includes(update?.id)) {
       console.log('Update filtered out, previously sent\n', update);
       continue;
     }
@@ -23,6 +23,7 @@ async function filterUpdates(updates) {
     }
   }
   previous = currUpdates;
+  console.log('THE PREVIOUS', previous);
   return toReturn;
 }
 
