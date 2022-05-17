@@ -1,18 +1,11 @@
 const { getScanGroup, getAuthorName, getCoverFileName, getRelId } = require('./helper.js');
 const { getMangaData, getMangaTitle, aggregateMangaChapters } = require('./manga.js');
-let previous = [];
 
 
 async function filterUpdates(updates) {
-  //Return chapters that are unique and aren't already posted in the manga.
-  const toReturn = [], currUpdates = [];
+  //Return chapters that have no duplicates.
+  const toReturn = [];
   for (const update of updates) {
-    if (previous.includes(update?.id)) {
-      console.log('Update filtered out, previously sent\n', update);
-      continue;
-    }
-    currUpdates.push(update?.id);
-
     const mangaId = getRelId(update?.relationships, 'manga');
     const existingChapters = await aggregateMangaChapters(mangaId);
     const chapter = update?.attributes?.chapter || '?';
@@ -22,8 +15,6 @@ async function filterUpdates(updates) {
       console.log('Update that was filered out, existing chapter\n', update);
     }
   }
-  previous = currUpdates;
-  console.log('THE PREVIOUS', previous);
   return toReturn;
 }
 

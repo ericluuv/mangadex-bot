@@ -19,7 +19,7 @@ const { createTables, getGuildTable, getUsersToMention } = require('./postgres/p
 //MagnaDex Stuff
 const { getListUpdates, processUpdates } = require('./manga/mgExport.js');
 
-/*
+
 async function pollUpdates(previousUrls) {
   //Continuously checks for updates every 10 minutes and sends them out.
   const guildTable = await getGuildTable();
@@ -43,26 +43,6 @@ async function pollUpdates(previousUrls) {
     }
   }
   setTimeout(function () { pollUpdates(newSet) }, 600000);
-}*/
-
-async function pollUpdates() {
-  //Continuously checks for updates every 10 minutes and sends them out.
-  const guildTable = await getGuildTable();
-  for (const row of guildTable) {
-    const guildId = row.guild_id, listId = row.list_id, channelId = row.channel_id;
-    const updates = await getListUpdates(listId);
-    console.log('Num of updates:', updates.length);
-    const allEmbeds = await processUpdates(updates);
-
-    for (const toEmbed of allEmbeds) {
-      const mangaId = toEmbed.manga_id;
-      const users = await getUsersToMention(mangaId, guildId);
-      await bot.channels.cache.get(channelId).send({
-        content: `Update for ${users}`, embeds: [toEmbed.toSend]
-      });
-    }
-  }
-  setTimeout(function () { pollUpdates(); }, 600000);
 }
 
 
@@ -72,7 +52,7 @@ bot.on('ready', async () => {
   console.log("Mangadex-bot logged in");
   bot.user.setActivity('Doki Doki Literature Club', { type: 'PLAYING' });
 
-  pollUpdates();
+  pollUpdates(new Set);
 });
 
 
