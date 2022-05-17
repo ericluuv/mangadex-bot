@@ -77,7 +77,7 @@ async function getMangaIdsFromList(listId) {
 async function getListUpdates(listId) {
   //Returns an array of all mangas in a list that have been updated in the last 20 minutes.
   await checkLimit();
-  const timeElasped = new Date(Date.now() - 1.2e+8).toISOString().split('.')[0];
+  const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
   let url = process.env.MANGADEX_URL + `/list/${listId}/feed`
     + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
     ;
