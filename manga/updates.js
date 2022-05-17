@@ -1,23 +1,28 @@
 const { getScanGroup, getAuthorName, getCoverFileName, getRelId } = require('./helper.js');
 const { getMangaData, getMangaTitle, aggregateMangaChapters } = require('./manga.js');
-
+let previous = [];
 
 
 async function filterUpdates(updates) {
   //Return chapters that are unique and aren't already posted in the manga.
-  const toReturn = [];
-  const uniques = new Set();
+  const toReturn = [], currUpdates = [];
   for (const update of updates) {
-    if (uniques.has(update.id)) { continue; }
-    uniques.add(update.id);
+    if (previous.includes(update?.id) || currUpdates.includes(update?.id)) {
+      console.log('Update filtered out, previously sent\n', update);
+      continue;
+    }
+    currUpdates.push(update?.id);
 
     const mangaId = getRelId(update?.relationships, 'manga');
     const existingChapters = await aggregateMangaChapters(mangaId);
     const chapter = update?.attributes?.chapter || '?';
 
     if (existingChapters[chapter] === 1) { toReturn.push(update); }
-    else { console.log('Update that was filered out\n', update); }
+    else {
+      console.log('Update that was filered out, existing chapter\n', update);
+    }
   }
+  previous = currUpdates;
   return toReturn;
 }
 
