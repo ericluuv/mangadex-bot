@@ -12,6 +12,26 @@ function getRelId(relationships, type) {
 }
 
 
+async function getMangaData(update, id = '') {
+  //Gets mangaData from update or through an id.
+  if (id === '') {
+    id = getRelId(update?.relationships, 'manga');
+    if (id === '') {
+      console.log('No suitable id found in getMangaData', update);
+      return;
+    }
+  }
+  const url = `${process.env.MANGADEX_URL}/manga/${id}`;
+  const options = formatOptions('GET');
+
+  await checkLimit();
+  const res = await fetch(url, options).catch(err => console.log(err));
+  const json = await res.json();
+  if (json.result === 'ok') { return json.data; }
+  else { console.log(`URL: ${url} failed`, json); }
+}
+
+
 async function getScanGroup(update) {
   //Grabs scanlation group name from relationships attribute, null if no value.
   const id = getRelId(update?.relationships, 'scanlation_group');
@@ -56,6 +76,7 @@ async function getAuthorName(mangaData, mangaId = '') {
   if (mangaData && !mangaId) { mangaId = mangaData?.id; }
   const queryRes = await getMangaDataRow(mangaId);
   if (queryRes?.author_name) { return queryRes?.author_name; }
+  mangaData = await getMangaData('', mangaId);
 
   const id = getRelId(mangaData?.relationships, 'author');
   if (id === '') {
@@ -80,5 +101,5 @@ async function getAuthorName(mangaData, mangaId = '') {
 
 
 module.exports = {
-  getScanGroup, getAuthorName, getCoverFileName, getRelId
+  getScanGroup, getAuthorName, getCoverFileName, getRelId, getMangaData
 };

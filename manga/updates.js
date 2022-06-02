@@ -1,5 +1,5 @@
-const { getScanGroup, getAuthorName, getCoverFileName, getRelId } = require('./helper.js');
-const { getMangaData, getMangaTitle, aggregateMangaChapters } = require('./manga.js');
+const { getScanGroup, getAuthorName, getCoverFileName, getRelId, getMangaData } = require('./helper.js');
+const { getMangaTitle, aggregateMangaChapters } = require('./manga.js');
 
 
 async function filterUpdates(updates) {

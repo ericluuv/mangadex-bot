@@ -1,27 +1,7 @@
 const { formatOptions } = require('../options.js');
-const { getRelId } = require('./helper.js');
+const { getMangaData } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
 const fetch = require('node-fetch');
-
-
-async function getMangaData(update, id = '') {
-  //Gets mangaData from update or through an id.
-  if (id === '') {
-    id = getRelId(update?.relationships, 'manga');
-    if (id === '') {
-      console.log('No suitable id found in getMangaData', update);
-      return;
-    }
-  }
-  const url = `${process.env.MANGADEX_URL}/manga/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options).catch(err => console.log(err));
-  const json = await res.json();
-  if (json.result === 'ok') { return json.data; }
-  else { console.log(`URL: ${url} failed`, json); }
-}
 
 
 async function getMangaTitle(mangaId) {
@@ -70,5 +50,5 @@ async function aggregateMangaChapters(mangaId) {
 
 
 module.exports = {
-  getMangaData, getMangaTitle, aggregateMangaChapters
+  getMangaTitle, aggregateMangaChapters
 };
