@@ -13,4 +13,4 @@ async function getMalData(username = '') {
 }
 
 
-module.exports = { getMalData }
+module.exports = { getMalData };

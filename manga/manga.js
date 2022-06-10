@@ -1,7 +1,6 @@
 const { formatOptions } = require('../options.js');
 const { getMangaData } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
-const { getMalData } = require('./mal.js');
 const fetch = require('node-fetch');
 
 
@@ -82,13 +81,6 @@ async function aggregateMangaChapters(mangaId) {
   }
 }
 
-async function test() {
-  const malData = await getMalData('Kyrodu');
-  const res = await getMangaIdsFromMal(malData);
-  console.log(res);
-}
-
-test();
 module.exports = {
   getMangaTitle, aggregateMangaChapters, getMangaIdsFromMal
 };
