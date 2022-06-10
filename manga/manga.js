@@ -1,6 +1,7 @@
 const { formatOptions } = require('../options.js');
 const { getMangaData } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
+const { getMalData } = require('./mal.js');
 const fetch = require('node-fetch');
 
 
@@ -15,6 +16,39 @@ async function getMangaTitle(mangaId) {
 
   await updateMangaTitle(mangaId, mangaTitle);
   return mangaTitle;
+}
+
+
+async function getMangaIdsFromMal(malData) {
+  //Gets mal_ids and finds corresponding manga_ids on mangadex.
+  const toReturn = [];
+  let counter = 0;
+
+  for (const info of malData) {
+    const title = info[0], malId = info[1];
+    const url = `${process.env.MANGADEX_URL}/manga?limit=50&title=${title}`;
+    const options = formatOptions('GET');
+
+    await checkLimit();
+    const res = await fetch(url, options);
+    const json = await res.json();
+
+    if (json?.result === 'ok') {
+      for (const mangaData of json?.data) {
+        const malMatch = mangaData?.attributes?.links?.mal == malId;
+        const titleMatch = mangaData?.attributes?.title?.en === title;
+
+        if (malMatch || titleMatch) {
+          toReturn.push(mangaData?.id);
+          counter++;
+          break;
+        }
+      }
+    }
+    else { console.log('getMangaIdsFromMal failed', json); }
+  }
+  console.log(`Mangas matched from MAL: ${counter}/${malData.length}`);
+  return toReturn;
 }
 
 
@@ -48,7 +82,13 @@ async function aggregateMangaChapters(mangaId) {
   }
 }
 
+async function test() {
+  const malData = await getMalData('Kyrodu');
+  const res = await getMangaIdsFromMal(malData);
+  console.log(res);
+}
 
+test();
 module.exports = {
-  getMangaTitle, aggregateMangaChapters
+  getMangaTitle, aggregateMangaChapters, getMangaIdsFromMal
 };

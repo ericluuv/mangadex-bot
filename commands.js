@@ -101,6 +101,9 @@ async function parseUrl(interaction, choice) {
     if (res === 'https://mangadex.org/list/') { return input.slice(26).split('/')[0]; }
     else { await interaction.editReply({content: 'Invalid URL.'}); }
   }
+  else if (choice === 'mal') {
+    
+  }
   else {
     await interaction.editReply({content: 'Internal error in parseUrl.'});
     console.log('Invalid choice inputted for checkUrl', choice);
@@ -233,7 +236,7 @@ async function handleMigrateCommand(interaction) {
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
 
-  const listTitle = (await getListData(listId))?.attributes?.name || 'Unkown Title';
+  const listTitle = (await getListData(listId))?.attributes?.name || 'Unknown Title';
   const serverListId = (await getGuildRow(guildId))?.[0]?.list_id;
   const currMangas = await getMangaIdsFromList(serverListId);
   const mangaIds = (await getMangaIdsFromList(listId)).filter(mangaId => {
