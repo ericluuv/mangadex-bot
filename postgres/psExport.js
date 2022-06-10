@@ -1,14 +1,9 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
 const { pool } = require('./psPool.js');
 const { checkLimit } = require('./limits.js');
 const { getSessionToken } = require('./dex_tokens.js');
 const { insertGuildRow, updateChannelId, getGuildTable, getGuildRow } = require('./guilds.js');
-const { insertFollow, delFollow, getMangaCount,
-  getFollowedMangas, getUsersToMention
-} = require('./follows.js');
-
+const { insertFollow, delFollow, getMangaCount, getFollowedMangas, getUsersToMention } = require('./follows.js');
+const { getMangaDataRow, updateMangaTitle, updateAuthorName } = require('./manga_data.js');
 
 //Session & Refresh token table
 const makeTokensTable = 'CREATE TABLE IF NOT EXISTS dex_tokens ( \
@@ -42,8 +37,7 @@ const makeLimitTable = 'CREATE TABLE IF NOT EXISTS limits ( \
   refresh_time BIGINT \
   )';
 
-
-const makeMangaTable = 'CREATE TABLE IF NOT EXISTS mangas ( \
+const makeMangaTable = 'CREATE TABLE IF NOT EXISTS manga_data ( \
   manga_id TEXT, \
   manga_title TEXT, \
   author_name TEXT, \
@@ -73,7 +67,7 @@ async function createTables() {
       .catch(err => console.log(err)),
 
     pool.query(makeMangaTable)
-      .then(console.log('mangas table made successfully'))
+      .then(console.log('manga_data table made successfully'))
       .catch(err => console.log(err))
   ];
   await Promise.all(promises);
@@ -92,5 +86,8 @@ module.exports = {
   getMangaCount,
   getFollowedMangas,
   getUsersToMention,
-  checkLimit
+  checkLimit, 
+  getMangaDataRow,
+  updateMangaTitle,
+  updateAuthorName
 };

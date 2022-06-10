@@ -7,9 +7,6 @@ const { MessageEmbed, MessageButton } = require('discord.js');
 const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PRESENCES"] });
 bot.login(process.env.DISCORD_TOKEN);
 
-// request API
-const fetch = require('node-fetch');
-
 //Commands
 const {
   createCommands, handleFollowCommand, handleUnfollowCommand,
@@ -17,10 +14,10 @@ const {
 } = require('./commands.js');
 
 // postgreSQL 
-const { createTables, getGuildTable, getUsersToMention } = require('./postgres/postgres.js');
+const { createTables, getGuildTable, getUsersToMention } = require('./postgres/psExport.js');
 
 //MagnaDex Stuff
-const { getMangaUpdates, processUpdates } = require('./manga.js');
+const { getListUpdates, processUpdates } = require('./manga/mgExport.js');
 
 
 async function pollUpdates(previousUrls) {
@@ -29,7 +26,7 @@ async function pollUpdates(previousUrls) {
   const newSet = new Set();
   for (const row of guildTable) {
     const guildId = row.guild_id, listId = row.list_id, channelId = row.channel_id;
-    const updates = await getMangaUpdates(listId);
+    const updates = await getListUpdates(listId);
     console.log('Num of updates:', updates.length);
     const allEmbeds = await processUpdates(updates);
 
@@ -42,7 +39,6 @@ async function pollUpdates(previousUrls) {
         await bot.channels.cache.get(channelId).send({ 
           content: `Update for ${users}`, embeds: [toEmbed.toSend]
         });
-        //await bot.channels.cache.get(channelId).send({ content: `Update for ${users}` });
       }
     }
   }
@@ -56,7 +52,7 @@ bot.on('ready', async () => {
   console.log("Mangadex-bot logged in");
   bot.user.setActivity('Doki Doki Literature Club', { type: 'PLAYING' });
 
-  pollUpdates(new Set());
+  pollUpdates(new Set);
 });
 
 

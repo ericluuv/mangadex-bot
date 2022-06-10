@@ -3,23 +3,18 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { pool } = require('./psPool.js');
 const fetch = require('node-fetch');
 const { checkLimit } = require('./limits.js');
+const { formatOptions } = require('../options.js');
 
 
 async function getDexTokens() {
   //Logins in using Mangadex credentials.
   await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/login';
-  const username = process.env.MANGA_USERNAME;
-  const password = process.env.MANGA_PASSWORD;
-  let data = { username: username, password: password };
-  let options = {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
+  const data = { 
+    username: process.env.MANGA_USERNAME, 
+    password: process.env.MANGA_PASSWORD
   };
+  const options = formatOptions('POST', '', data);
 
   const res = await fetch(url, options).catch(err => console.log(err));
   const json = await res.json();
@@ -32,15 +27,8 @@ async function refreshSession(refreshToken) {
   //Refreshes the session token using the refreshToken.
   await checkLimit();
   const url = process.env.MANGADEX_URL + '/auth/refresh';
-  let data = { token: refreshToken };
-  let options = {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  };
+  const data = { token: refreshToken };
+  const options = formatOptions('POST', '', data);
 
   const res = await fetch(url, options).catch(err => console.log(err));
   const json = await res.json();
@@ -49,7 +37,7 @@ async function refreshSession(refreshToken) {
 }
 
 
-async function updateTokens(sessionToken, refreshToken) {
+async function updateTokens(sessionToken = '', refreshToken = '') {
   //Updates tokens in the database.
   const now = Date.now();
   let temp = [];
@@ -117,14 +105,14 @@ async function getSessionToken() {
     if (Date.now() - rows[0].session_date >= 840000) {
       //Refresh
       const refreshed = await refreshSession(rows[0].refresh_token);
-      console.log('Refreshed token');
-      await updateTokens(refreshed, '');
+      if (refreshed) { 
+        console.log('Refreshed token');
+        await updateTokens(refreshed, '');
+      }
     }
   }
   const res = await pool.query('SELECT * from dex_tokens;');
   return res.rows[0].session_token;
 }
 
-module.exports = {
-  getSessionToken: getSessionToken
-};
+module.exports = { getSessionToken };

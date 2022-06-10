@@ -48,8 +48,5 @@ function getGuildRow(guildId) {
 
 
 module.exports = {
-  insertGuildRow: insertGuildRow,
-  updateChannelId: updateChannelId,
-  getGuildTable: getGuildTable,
-  getGuildRow: getGuildRow
+  insertGuildRow, updateChannelId, getGuildTable, getGuildRow
 };
