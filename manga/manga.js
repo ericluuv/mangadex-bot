@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 
 
 async function getMangaTitle(mangaId) {
-  //Queries table for mangaTitle. If not there, get's it from mangadex.
+  //Queries table for mangaTitle. If not there, gets it from mangadex.
   const res = await getMangaDataRow(mangaId);
   if (res?.manga_title) { return res?.manga_title; }
   const mangaData = await getMangaData('', mangaId);

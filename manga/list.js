@@ -79,7 +79,7 @@ async function getListUpdates(listId) {
   await checkLimit();
   const timeElasped = new Date(Date.now() - 1.2e+6).toISOString().split('.')[0];
   let url = process.env.MANGADEX_URL + `/list/${listId}/feed`
-    + '?translatedLanguage[]=en' + `&createdAtSince=${timeElasped}`
+    + `?translatedLanguage[]=en&createdAtSince=${timeElasped}&includes[]=scanlation_group`
     ;
   const options = formatOptions('GET');
   const res = await fetch(url, options).catch(err => console.log(err));
