@@ -39,7 +39,7 @@ function getGuildTable() {
 function getGuildRow(guildId) {
   //Returns row with corresponding guildId.
   const selectString = `SELECT * FROM guilds WHERE guild_id = '${guildId}';`;
-  return pool.query(selectString).then(res => { return res.rows; })
+  return pool.query(selectString).then(res => res.rows)
     .catch(err => {
       console.log(err);
       return [];

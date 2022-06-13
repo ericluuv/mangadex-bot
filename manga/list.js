@@ -67,7 +67,7 @@ async function getMangaIdsFromList(listId) {
   //Gets all mangaIds from a listId.
   const res = await getListData(listId);
   const toReturn = [];
-  for (const rel of res?.relationships) {
+  for (const rel of res?.relationships || []) {
     if (rel?.type === 'manga') { toReturn.push(rel?.id); }
   }
   return toReturn;

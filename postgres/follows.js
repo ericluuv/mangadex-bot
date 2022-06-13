@@ -7,8 +7,9 @@ function insertFollow(userId, mangaId, guildId) {
     manga_id = '${mangaId}' AND guild_id = '${guildId}';`;
   const insertString = `INSERT INTO follows VALUES ('${userId}', '${mangaId}', '${guildId}');`;
 
-  return pool.query(checkString).then(res => res?.rowCount)
-    .then(len => {
+  return pool.query(checkString)
+    .then(res => {
+      const len = res?.rowCount || 0;
       if (len === 0) {
         return pool.query(insertString).then(res => res?.rowCount);
       }
@@ -39,9 +40,8 @@ function getFollowedMangas(guildId, userId) {
   const selectString = `SELECT manga_id FROM follows WHERE guild_id = '${guildId}'
     AND user_id = '${userId}';`;
 
-  return pool.query(selectString).then(res => {
-    return res?.rows.map(row => row.manga_id);
-  }).catch(err => console.log(err));
+  return pool.query(selectString).then(res => res?.rows.map(row => row.manga_id))
+    .catch(err => console.log(err));
 }
 
 

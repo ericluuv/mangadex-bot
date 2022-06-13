@@ -8,10 +8,12 @@ const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PR
 bot.login(process.env.DISCORD_TOKEN);
 
 //Commands
+/*
 const {
   createCommands, handleFollowCommand, handleUnfollowCommand,
   handleSetCommand, handleListCommand, handleMigrateCommand
-} = require('./commands.js');
+} = require('./commands.js');*/
+const {createCommands, commands } = require('./commands/command-handler.js');
 
 // postgreSQL 
 const { createTables, getGuildTable, getUsersToMention } = require('./postgres/psExport.js');
@@ -59,6 +61,8 @@ bot.on('ready', async () => {
 bot.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
+  await commands[interaction.commandName](interaction);
+  /*
   if (interaction.commandName === 'follow') {
     await handleFollowCommand(interaction);
   }
@@ -77,6 +81,6 @@ bot.on('interactionCreate', async interaction => {
 
   else if (interaction.commandName === 'migrate') {
     await handleMigrateCommand(interaction);
-  }
+  }*/
 });
 

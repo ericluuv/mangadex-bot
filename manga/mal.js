@@ -1,5 +1,7 @@
 const { formatOptions } = require('../options.js');
 const fetch = require('node-fetch');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 async function getMalData(username = '') {
   //Grabes mal_ids and titles of mangas from a MAL username.

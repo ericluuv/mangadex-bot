@@ -2,6 +2,8 @@ const { formatOptions } = require('../options.js');
 const { getMangaData } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
 const fetch = require('node-fetch');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 
 async function getMangaTitle(mangaId) {
