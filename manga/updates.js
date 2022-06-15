@@ -25,7 +25,7 @@ async function processUpdates(updates) {
   const toReturn = [];
   for (const update of updates) {
     const mangaData = await getMangaData(update);
-    const mangaTitle = await getMangaTitle(mangaData?.id);
+    const mangaTitle = await getMangaTitle('', mangaData);
     const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
     const authorName = await getAuthorName(mangaData, mangaData?.id);
     const coverFileName = await getCoverFileName(mangaData);

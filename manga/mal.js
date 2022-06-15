@@ -15,4 +15,7 @@ async function getMalData(username = '') {
 }
 
 
+
+
+
 module.exports = { getMalData };
