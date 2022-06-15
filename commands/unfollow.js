@@ -27,7 +27,7 @@ async function handleUnfollowCommand(interaction) {
     await interaction.editReply({ content: `Wasn't even following ${mangaTitle || mangaId}` });
   }
   else {
-    const mangaCount = await getMangaCount(mangaId);
+    const mangaCount = await getMangaCount(mangaId, guildId);
     if (mangaCount === '0') {
       const listId = (await getGuildRow(guildId))?.[0]?.list_id;
       const res = await updateMangaList(mangaId, listId, 'DELETE');

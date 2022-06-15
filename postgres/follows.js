@@ -27,9 +27,10 @@ function delFollow(userId, mangaId, guildId) {
 }
 
 
-function getMangaCount(mangaId) {
-  //Grabs count of how many people are following a manga. 
-  const countString = `SELECT COUNT(*) FROM follows WHERE manga_id = '${mangaId}';`;
+function getMangaCount(mangaId, guildId) {
+  //Grabs count of how many people are following a manga in a guild. 
+  const countString = `SELECT COUNT(*) FROM follows WHERE manga_id = '${mangaId}'
+  AND guild_id = '${guildId}';`;
   return pool.query(countString).then(res => res?.rows?.[0]?.count)
     .catch(err => console.log(err));
 }
