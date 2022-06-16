@@ -14,7 +14,6 @@ async function createList(listName) {
     visibility: 'public'
   };
   const token = await getSessionToken();
-  console.log(`Some of bearer token: ${token.slice(0, 10)}`);
   const options = formatOptions('POST', `Bearer ${token}`, bod);
 
   const res = await fetch(url, options).catch(err => console.log(err));

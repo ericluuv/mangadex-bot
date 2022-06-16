@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { checkGuild, parseUrl } = require('./helper.js');
 const { getGuildRow, delFollow, getMangaCount } = require('../postgres/psExport.js');
-const { getMangaTitle, updateMangaList } = require('../manga/mgExport.js');
+const { getMangaTitle, updateMangaList, malIdToMD } = require('../manga/mgExport.js');
 
 
 const unfollowCommand = new SlashCommandBuilder()
@@ -16,8 +16,14 @@ const unfollowCommand = new SlashCommandBuilder()
 async function handleUnfollowCommand(interaction) {
   await interaction.deferReply();
   const guildStatus = await checkGuild(interaction);
-  const mangaId = await parseUrl(interaction, 'manga');
-  if (!guildStatus || mangaId === '') { return; }
+  let mangaId = await parseUrl(interaction, 'manga');
+  /*
+  if (mangaId?.length !== 36) {
+    //Mal Id, convert to mangadex
+    mangaId = await malIdToMD('', mangaId);
+    if (!mangaId) { await interaction.editReply({content: 'No Mangadex equivalent.'})}
+  }*/
+  if (!guildStatus || !mangaId) { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
   const mangaTitle = await getMangaTitle(mangaId);

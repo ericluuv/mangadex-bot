@@ -8,11 +8,6 @@ const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PR
 bot.login(process.env.DISCORD_TOKEN);
 
 //Commands
-/*
-const {
-  createCommands, handleFollowCommand, handleUnfollowCommand,
-  handleSetCommand, handleListCommand, handleMigrateCommand
-} = require('./commands.js');*/
 const {createCommands, commands } = require('./commands/command-handler.js');
 
 // postgreSQL 
@@ -62,25 +57,5 @@ bot.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
   await commands[interaction.commandName](interaction);
-  /*
-  if (interaction.commandName === 'follow') {
-    await handleFollowCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'unfollow') {
-    await handleUnfollowCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'set') {
-    await handleSetCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'list') {
-    await handleListCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'migrate') {
-    await handleMigrateCommand(interaction);
-  }*/
 });
 

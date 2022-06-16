@@ -3,53 +3,66 @@ const { getMangaData } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
 const fetch = require('node-fetch');
 const path = require('path');
+const { getMalTitle } = require('./mal.js');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 
-async function getMangaTitle(mangaId) {
+async function getMangaTitle(mangaId, mangaData = '', update = true) {
   //Queries table for mangaTitle. If not there, gets it from mangadex.
-  const res = await getMangaDataRow(mangaId);
-  if (res?.manga_title) { return res?.manga_title; }
-  const mangaData = await getMangaData('', mangaId);
+  if (mangaId) {
+    const res = await getMangaDataRow(mangaId);
+    if (res?.manga_title) { return res?.manga_title; }
+  }
+  if (!mangaData) { mangaData = await getMangaData('', mangaId); }
+  mangaId = mangaData?.id;
 
   let mangaTitle = mangaData?.attributes?.title;
   mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro'] || 'Unknown Title';
+  if (update) { await updateMangaTitle(mangaId, mangaTitle); }
 
-  await updateMangaTitle(mangaId, mangaTitle);
   return mangaTitle;
 }
 
 
-async function getMangaIdsFromMal(malData) {
+async function malIdToMD(title, malId) {
+  //Grabs mangaId on mangadex from malIds
+  if (!title) { title = await getMalTitle(malId); }
+  const url = `${process.env.MANGADEX_URL}/manga?limit=50&title=${title}?&includes[]=author`;
+  const options = formatOptions('GET');
+
+  await checkLimit();
+  const res = await fetch(url, options);
+  const json = await res.json();
+  if (json?.result === 'ok') {
+    for (const mangaData of json?.data) {
+      const malMatch = mangaData?.attributes?.links?.mal === malId;
+      const mangaDexTitle = await getMangaTitle(mangaData?.id, mangaData, false);
+      const titleMatch = mangaDexTitle === title;
+      if (malMatch || titleMatch) { 
+        console.log(`mal: ${malId} = MD: ${mangaData?.id}, title = ${mangaDexTitle}`);
+        return mangaData?.id;
+      }
+    }
+  }
+  return '';
+}
+
+
+async function mapMalData(malData) {
   //Gets mal_ids and finds corresponding manga_ids on mangadex.
   const toReturn = [];
   let counter = 0;
 
   for (const info of malData) {
     const title = info[0], malId = info[1];
-    const url = `${process.env.MANGADEX_URL}/manga?limit=50&title=${title}`;
-    const options = formatOptions('GET');
-
-    await checkLimit();
-    const res = await fetch(url, options);
-    const json = await res.json();
-
-    if (json?.result === 'ok') {
-      for (const mangaData of json?.data) {
-        const malMatch = mangaData?.attributes?.links?.mal == malId;
-        const titleMatch = mangaData?.attributes?.title?.en === title;
-
-        if (malMatch || titleMatch) {
-          toReturn.push(mangaData?.id);
-          counter++;
-          break;
-        }
-      }
+    const res = await malIdToMD(title, malId);
+    if (res) {
+      toReturn.push(res);
+      counter++;
     }
-    else { console.log('getMangaIdsFromMal failed', json); }
   }
-  console.log(`Mangas matched from MAL: ${counter}/${malData.length}`);
-  return toReturn;
+  const status = `Mangas matched from MAL: ${counter}/${malData.length}`;
+  return [toReturn, status];
 }
 
 
@@ -84,5 +97,7 @@ async function aggregateMangaChapters(mangaId) {
 }
 
 module.exports = {
-  getMangaTitle, aggregateMangaChapters, getMangaIdsFromMal
+  getMangaTitle, aggregateMangaChapters, mapMalData, malIdToMD
 };
+
+

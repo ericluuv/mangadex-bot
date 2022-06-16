@@ -44,8 +44,10 @@ async function getMangaData(update, id = '') {
 async function getScanGroup(update) {
   //Grabs scanlation group name from relationships attribute, null if no value.
   const attr = getRelAttr(update?.relationships, 'scanlation_group');
-  if (attr) { console.log("avoided scanGroup");
-  return attr?.name; }
+  if (attr) {
+    console.log("avoided scanGroup");
+    return attr?.name;
+  }
 
   const id = getRelId(update?.relationships, 'scanlation_group');
   if (id === '') {
@@ -83,7 +85,7 @@ async function getCoverFileName(mangaData) {
   if (json.result === 'ok') { return json.data?.attributes?.fileName; }
   else { console.log(`URL: ${url} failed`, json); }*/
   const attr = getRelAttr(mangaData?.relationships, 'cover_art');
-  if (attr) { 
+  if (attr) {
     console.log("avoided cover_art");
     return attr?.fileName;
   }
@@ -105,13 +107,15 @@ async function getAuthorName(mangaData, mangaId = '') {
   }*/
   //Either we have mangaData and no mangaId, or mangaId and no mangaData
   //
-  if (mangaId === '') { mangaId = mangaData?.id; }
-  const queryRes = await getMangaDataRow(mangaId);
-  if (queryRes?.author_name) { return queryRes?.author_name; }
+  if (mangaId) {
+    const queryRes = await getMangaDataRow(mangaId);
+    if (queryRes?.author_name) { return queryRes?.author_name; }
+  }
   if (!mangaData) { mangaData = await getMangaData('', mangaId); }
+  mangaId = mangaData?.id;
 
   const attr = getRelAttr(mangaData?.relationships, 'author');
-  if (attr) { 
+  if (attr) {
     console.log("avoided author");
     await updateAuthorName(mangaId, attr?.name || 'Unknown Author');
     return attr?.name;
