@@ -3,11 +3,11 @@ const { getMangaData } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
 const fetch = require('node-fetch');
 const path = require('path');
-const { getMalData } = require('./mal.js');
+const { getMalTitle } = require('./mal.js');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 
-async function getMangaTitle(mangaId, mangaData = '') {
+async function getMangaTitle(mangaId, mangaData = '', update = true) {
   //Queries table for mangaTitle. If not there, gets it from mangadex.
   if (mangaId) {
     const res = await getMangaDataRow(mangaId);
@@ -18,14 +18,15 @@ async function getMangaTitle(mangaId, mangaData = '') {
 
   let mangaTitle = mangaData?.attributes?.title;
   mangaTitle = mangaTitle?.en || mangaTitle?.ja || mangaTitle?.['ja-ro'] || 'Unknown Title';
-  await updateMangaTitle(mangaId, mangaTitle);
+  if (update) { await updateMangaTitle(mangaId, mangaTitle); }
 
   return mangaTitle;
 }
 
 
-async function getMangaIdFromMal(title, malId) {
+async function malIdToMD(title, malId) {
   //Grabs mangaId on mangadex from malIds
+  if (!title) { title = await getMalTitle(malId); }
   const url = `${process.env.MANGADEX_URL}/manga?limit=50&title=${title}?&includes[]=author`;
   const options = formatOptions('GET');
 
@@ -35,12 +36,14 @@ async function getMangaIdFromMal(title, malId) {
   if (json?.result === 'ok') {
     for (const mangaData of json?.data) {
       const malMatch = mangaData?.attributes?.links?.mal === malId;
-      const mangaDexTitle = await getMangaTitle('', mangaData);
+      const mangaDexTitle = await getMangaTitle(mangaData?.id, mangaData, false);
       const titleMatch = mangaDexTitle === title;
-      if (malMatch || titleMatch) { return [mangaData?.id, mangaDexTitle]; }
+      if (malMatch || titleMatch) { 
+        console.log(`mal: ${malId} = MD: ${mangaData?.id}, title = ${mangaDexTitle}`);
+        return mangaData?.id;
+      }
     }
   }
-
   return '';
 }
 
@@ -52,15 +55,14 @@ async function mapMalData(malData) {
 
   for (const info of malData) {
     const title = info[0], malId = info[1];
-    const res = await getMangaIdFromMal(title, malId);
+    const res = await malIdToMD(title, malId);
     if (res) {
       toReturn.push(res);
       counter++;
     }
-    else { console.log('getMangaIdsFromMal failed', title, malId); }
   }
-  console.log(`Mangas matched from MAL: ${counter}/${malData.length}`);
-  return toReturn;
+  const status = `Mangas matched from MAL: ${counter}/${malData.length}`;
+  return [toReturn, status];
 }
 
 
@@ -95,7 +97,7 @@ async function aggregateMangaChapters(mangaId) {
 }
 
 module.exports = {
-  getMangaTitle, aggregateMangaChapters, mapMalData
+  getMangaTitle, aggregateMangaChapters, mapMalData, malIdToMD
 };
 
 
