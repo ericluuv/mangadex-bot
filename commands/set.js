@@ -15,11 +15,9 @@ async function handleSetCommand(interaction) {
   const guilds = (await getGuildTable()).map(row => row.guild_id);
 
   if (guilds.includes(guildId)) {
-    console.log('INCLUDED')
     await updateChannelId(guildId, channelId);
   }
   else {
-    console.log('NOT INCLUDED');
     const listId = await createList('botList' + (guilds.length + 1));
     if (typeof (listId) != 'undefined') { insertGuildRow(guildId, listId, channelId); }
   }

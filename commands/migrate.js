@@ -22,17 +22,8 @@ async function handleMigrateCommand(interaction) {
   if (!guildStatus || !listId) { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
-  const channelId = interaction.channel.id;
 
   let listTitle;
-  //const listTitle = (await getListData(listId))?.attributes?.name || 'Unknown Title';
-  //Fix so user_ids will be taken into account when trying to follow a manga or not
-  /*
-  const serverListId = (await getGuildRow(guildId))?.[0]?.list_id;
-  const currMangas = await getMangaIdsFromList(serverListId);
-  const mangaIds = (await getMangaIdsFromList(listId)).filter(mangaId => {
-    return !(currMangas.includes(mangaId));
-  });*/
   const serverListId = (await getGuildRow(guildId))?.[0]?.list_id;
   const currFollowedMangas = await getFollowedMangas(guildId, userId);
   let mangasToMigrate;

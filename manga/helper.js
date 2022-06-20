@@ -42,71 +42,23 @@ async function getMangaData(update, id = '') {
 
 
 async function getScanGroup(update) {
-  //Grabs scanlation group name from relationships attribute, null if no value.
+  //Grabs scanlation group name from relationships attribute.
   const attr = getRelAttr(update?.relationships, 'scanlation_group');
-  if (attr) {
-    console.log("avoided scanGroup");
-    return attr?.name;
-  }
-
-  const id = getRelId(update?.relationships, 'scanlation_group');
-  if (id === '') {
-    console.log('No suitable id found in getScanGroup', update);
-    return;
-  }
-
-  const url = `${process.env.MANGADEX_URL}/group/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options).catch(err => console.log(err));
-  const json = await res.json();
-  if (json.result === 'ok') { return json.data?.attributes?.name; }
-  else { console.log(`URL: ${url} failed`, json); }
-
+  if (attr) { return attr?.name; }
+  else { console.log('Error in getScanGroup', update); }
 }
 
 
 async function getCoverFileName(mangaData) {
   //Gets coverFileName from mangaData.
-  /*
-  const id = getRelId(mangaData?.relationships, 'cover_art');
-  if (id === '') {
-    console.log('No suitable id found in getCoverFileName', mangaData);
-    return;
-  }
-
-  const url = `${process.env.MANGADEX_URL}/cover/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options);
-  const json = await res.json();
-  if (json.result === 'ok') { return json.data?.attributes?.fileName; }
-  else { console.log(`URL: ${url} failed`, json); }*/
   const attr = getRelAttr(mangaData?.relationships, 'cover_art');
-  if (attr) {
-    console.log("avoided cover_art");
-    return attr?.fileName;
-  }
+  if (attr) { return attr?.fileName; }
+  else { console.log('Error in getCoverFileName', mangaData); }
 }
 
 
 async function getAuthorName(mangaData, mangaId = '') {
   //Gets author name from the mangaData.
-  /*
-  if (mangaData && !mangaId) { mangaId = mangaData?.id; }
-  const queryRes = await getMangaDataRow(mangaId);
-  if (queryRes?.author_name) { return queryRes?.author_name; }
-  mangaData = await getMangaData('', mangaId);
-
-  const id = getRelId(mangaData?.relationships, 'author');
-  if (id === '') {
-    console.log('No suitable id found in getAuthorName', mangaData);
-    return;
-  }*/
-  //Either we have mangaData and no mangaId, or mangaId and no mangaData
-  //
   if (mangaId) {
     const queryRes = await getMangaDataRow(mangaId);
     if (queryRes?.author_name) { return queryRes?.author_name; }
@@ -116,24 +68,10 @@ async function getAuthorName(mangaData, mangaId = '') {
 
   const attr = getRelAttr(mangaData?.relationships, 'author');
   if (attr) {
-    console.log("avoided author");
     await updateAuthorName(mangaId, attr?.name || 'Unknown Author');
     return attr?.name;
   }
-
-  /*
-  const url = `${process.env.MANGADEX_URL}/author/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options).catch(err => console(err));
-  const json = await res.json();
-  if (json.result === 'ok') {
-    const authorName = json.data?.attributes?.name || 'Unknown Author';
-    await updateAuthorName(mangaId, authorName);
-    return authorName;
-  }
-  else { console.log(`URL: ${url} failed`, json); }*/
+  else { console.log('Error in getAuthorName', mangaData, mangaId); }
 }
 
 

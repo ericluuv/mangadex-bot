@@ -70,9 +70,3 @@ async function parseUrl(interaction, choice) {
 
 
 module.exports = { checkGuild, parseUrl };
-/*
-console.log(parseMalManga('https://myanimelist.net/manga/114700'));
-console.log(parseMalManga('https://myanimelist.net/manga/8652/Zankoku_na_Kami_ga_Shihai_suru'));
-console.log(parseMalManga('https://myanimelist.net/manga/8652/Zankoku_na_Kami_ga_Shihai_suru/moreinfo'));
-console.log(parseMalManga('https://myanimelist.net/mang'));
-console.log(parseMalManga('asd'));*/

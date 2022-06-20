@@ -43,7 +43,8 @@ async function handleListCommand(interaction) {
       .setTitle(`${interaction.user.username}'s List`)
       .setDescription(`${counter} / ${fields.length}`)
       .setFields(groupedField);
-  })
+  });
+  
   await interaction.editReply({ content: 'Done!' });
   if (embeds.length === 0) {
     await interaction.channel.send({ content: 'Following 0 Mangas' });

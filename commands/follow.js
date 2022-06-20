@@ -17,12 +17,6 @@ async function handleFollowCommand(interaction) {
   await interaction.deferReply();
   const guildStatus = await checkGuild(interaction);
   let mangaId = await parseUrl(interaction, 'manga');
-  /*
-  if (mangaId?.length !== 36) {
-    //Mal Id, convert to mangadex
-    mangaId = await malIdToMD('', mangaId);
-    if (!mangaId) { await interaction.editReply({content: 'No Mangadex equivalent.'})}
-  }*/
   if (!guildStatus || !mangaId) { return; }
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
