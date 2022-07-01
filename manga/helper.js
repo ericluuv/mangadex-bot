@@ -57,7 +57,7 @@ async function getCoverFileName(mangaData) {
 }
 
 
-async function getAuthorName(mangaData, mangaId = '') {
+async function getAuthorName(mangaData, mangaId = '', update=true) {
   //Gets author name from the mangaData.
   if (mangaId) {
     const queryRes = await getMangaDataRow(mangaId);
@@ -68,7 +68,7 @@ async function getAuthorName(mangaData, mangaId = '') {
 
   const attr = getRelAttr(mangaData?.relationships, 'author');
   if (attr) {
-    await updateAuthorName(mangaId, attr?.name || 'Unknown Author');
+    if (update) { await updateAuthorName(mangaId, attr?.name || 'Unknown Author'); }
     return attr?.name;
   }
   else { console.log('Error in getAuthorName', mangaData, mangaId); }

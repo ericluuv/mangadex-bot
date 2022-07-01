@@ -1,9 +1,9 @@
 const { getGuildRow } = require('.././postgres/psExport.js');
 const { malIdToMD } = require('../manga/mgExport.js');
 
-async function checkGuild(interaction) {
+async function checkGuild(interaction, guild_id='') {
   //Returns true if guild is in db, false if not. Also edits reply.
-  const guildId = interaction.guild.id;
+  const guildId = guild_id ? guild_id :interaction.guild.id;
   const res = await getGuildRow(guildId).then(res => Boolean(res?.length || 0));
   if (!res) { await interaction.editReply({ content: 'Channel has not been set, use /set to do so.' }); }
   return res;
@@ -41,7 +41,7 @@ function parseMalManga(url) {
 }
 
 
-async function parseUrl(interaction, choice) {
+async function parseUrl(interaction, choice, url='') {
   //Checks for both MAL and MD urls and returns one if possible.
   const input = interaction.options.getString('url');
   let id;
@@ -69,4 +69,4 @@ async function parseUrl(interaction, choice) {
 
 
 
-module.exports = { checkGuild, parseUrl };
+module.exports = { checkGuild, parseUrl, parseMDManga };

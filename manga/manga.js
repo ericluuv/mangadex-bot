@@ -1,5 +1,5 @@
 const { formatOptions } = require('../options.js');
-const { getMangaData } = require('./helper.js');
+const { getMangaData, getAuthorName, getCoverFileName } = require('./helper.js');
 const { getMangaDataRow, updateMangaTitle, checkLimit } = require('../postgres/psExport.js');
 const fetch = require('node-fetch');
 const path = require('path');
@@ -38,7 +38,7 @@ async function malIdToMD(title, malId) {
       const malMatch = mangaData?.attributes?.links?.mal === malId;
       const mangaDexTitle = await getMangaTitle(mangaData?.id, mangaData, false);
       const titleMatch = mangaDexTitle === title;
-      if (malMatch || titleMatch) { 
+      if (malMatch || titleMatch) {
         console.log(`mal: ${malId} = MD: ${mangaData?.id}, title = ${mangaDexTitle}`);
         return mangaData?.id;
       }
@@ -96,8 +96,40 @@ async function aggregateMangaChapters(mangaId) {
   }
 }
 
+
+async function getRandomManga() {
+  //Returns manga returned from the random endpoint.
+  const url = `${process.env.MANGADEX_URL}/manga/random?includes[]=author&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive`;
+  const options = formatOptions('GET');
+  await checkLimit();
+  const res = await fetch(url, options);
+  const json = await res.json();
+  const mangaData = json?.data;
+  const mangaTitle = await getMangaTitle('', mangaData, false);
+  const authorName = await getAuthorName(mangaData, '', false);
+  const coverFileName = await getCoverFileName(mangaData);
+  const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
+  const contentRating = mangaData?.attributes?.contentRating || 'Unknown';
+  let tagStr = '';
+  for (const tag of mangaData?.attributes?.tags.slice(0, 10)) {
+    tagStr += `${tag?.attributes?.name?.en}\n`;
+  }
+
+  const embed = {
+    'title': `${mangaTitle}`,
+    'description': `Author: ${authorName}\nContent Rating: ${contentRating}\n${tagStr}`,
+    'color': 16742144,
+    'footer': { 'text': 'Rando' },
+    'url': `https://mangadex.org/title/${mangaData?.id}`,
+    'thumbnail': { 'url': thumbnailUrl }
+  };
+  console.log(tagStr);
+  return embed;
+}
+
 module.exports = {
-  getMangaTitle, aggregateMangaChapters, mapMalData, malIdToMD
+  getMangaTitle, aggregateMangaChapters, mapMalData, malIdToMD, getRandomManga
 };
+
 
 

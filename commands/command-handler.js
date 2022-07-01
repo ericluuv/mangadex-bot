@@ -2,19 +2,22 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const global_url = `https://discord.com/api/v10/applications/${process.env.APPLICATION_ID}/commands`;
 const fetch = require('node-fetch');
+const { jarvis } = require('./jarvis.js');
 const { formatOptions } = require('../options.js');
 const { followCommand, handleFollowCommand } = require('./follow.js');
 const { listMangaCommand, handleListCommand } = require('./list.js');
 const { migrateCommand, handleMigrateCommand } = require('./migrate.js');
 const { setChannelCommand, handleSetCommand } = require('./set.js');
 const { unfollowCommand, handleUnfollowCommand } = require('./unfollow.js');
-const commandArr = [followCommand, unfollowCommand, setChannelCommand, listMangaCommand, migrateCommand];
+const { randomMangaCommand, handleRandomCommand } = require('./random.js');
+const commandArr = [followCommand, unfollowCommand, setChannelCommand, listMangaCommand, migrateCommand, randomMangaCommand];
 const commands = {  
   'follow': handleFollowCommand,
   'unfollow': handleUnfollowCommand,
   'list': handleListCommand,
   'migrate': handleMigrateCommand,
-  'set': handleSetCommand
+  'set': handleSetCommand,
+  'random': handleRandomCommand
 };
 
 
@@ -40,4 +43,4 @@ async function createCommands() {
   console.log('Commands created');
 }
 
-module.exports = { createCommands, commands };
+module.exports = { createCommands, commands, jarvis};

@@ -8,7 +8,7 @@ const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PR
 bot.login(process.env.DISCORD_TOKEN);
 
 //Commands
-const {createCommands, commands } = require('./commands/command-handler.js');
+const {createCommands, commands, jarvis} = require('./commands/command-handler.js');
 
 // postgreSQL 
 const { createTables, getGuildTable, getUsersToMention } = require('./postgres/psExport.js');
@@ -51,6 +51,16 @@ bot.on('ready', async () => {
 
   pollUpdates(new Set);
 });
+
+
+bot.on('messageCreate', async (msg) => {
+  const text = msg.content.toLowerCase().trim()
+  const re = /jarvis,?\s+follow\s+.+/;
+  if (text.search(re) >= 0) {
+    await jarvis(msg, text);
+  }
+});
+
 
 
 bot.on('interactionCreate', async interaction => {

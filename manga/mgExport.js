@@ -2,7 +2,7 @@ const { createList, getListData, updateMangaList,
   getMangaIdsFromList, getListUpdates
  } = require('./list.js');
 const { getAuthorName} = require('./helper.js');
-const {getMangaTitle, malIdToMD } = require('./manga.js');
+const {getMangaTitle, malIdToMD, getRandomManga } = require('./manga.js');
 const { processUpdates } = require('./updates.js');
 const { getMalTitle, getMalData } = require('./mal.js');
 
@@ -26,5 +26,5 @@ async function getFieldsFromMangaIds(mangaIds) {
 module.exports = {
   createList, getListData, updateMangaList, getMangaIdsFromList, malIdToMD,
   processUpdates, getFieldsFromMangaIds, getListUpdates, getMangaTitle, getMalTitle,
-  getMalData
+  getMalData, getRandomManga
 };
