@@ -12,7 +12,7 @@ const randomMangaCommand = new SlashCommandBuilder()
 async function handleRandomCommand(interaction) {
   await interaction.deferReply();
   const embed = await getRandomManga();
-  await interaction.channel.send({embeds: [embed]});
+  await interaction.editReply({embeds: [embed]});
 }
 
 

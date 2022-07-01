@@ -119,7 +119,7 @@ async function getRandomManga() {
     'title': `${mangaTitle}`,
     'description': `Author: ${authorName}\nContent Rating: ${contentRating}\n${tagStr}`,
     'color': 16742144,
-    'footer': { 'text': 'Rando' },
+    'footer': { 'text': 'Random Manga' },
     'url': `https://mangadex.org/title/${mangaData?.id}`,
     'thumbnail': { 'url': thumbnailUrl }
   };
