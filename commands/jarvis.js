@@ -1,12 +1,12 @@
 const { parseMDManga } = require('./helper.js');
 const { getGuildRow, insertFollow } = require('../postgres/psExport.js');
 const { getMangaTitle, updateMangaList } = require('../manga/mgExport.js');
+const { MessageAttachment } = require('discord.js')
 
 async function jarvis(msg, text) {
   const guildId = msg.guild.id;
   const userId = msg.author.id;
   const temp = text.split(' ')[2];
-  console.log(temp, text.split(' '));
   if (temp) {
     const mangaId = parseMDManga(temp);
     if (!mangaId) {
@@ -15,6 +15,10 @@ async function jarvis(msg, text) {
     }
     const mangaTitle = await getMangaTitle(mangaId);
     const listId = (await getGuildRow(guildId))[0]?.list_id;
+
+    const jGif = new MessageAttachment('resources/jarvisGif.gif')
+    await msg.channel.send({files: [jGif]});
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     const status = await updateMangaList(mangaId, listId, 'POST');
     if (status !== 'ok') {
@@ -26,11 +30,10 @@ async function jarvis(msg, text) {
         await msg.channel.send({ content: `Sir, now following ${mangaTitle || mangaId}` });
       }
       else {
-        await msgchannel.send({ content: `Sir, already following ${mangaTitle || mangaId}` });
+        await msg.channel.send({ content: `Sir, already following ${mangaTitle || mangaId}` });
       }
     }
   }
-
 }
 
 

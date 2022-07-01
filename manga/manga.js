@@ -123,7 +123,6 @@ async function getRandomManga() {
     'url': `https://mangadex.org/title/${mangaData?.id}`,
     'thumbnail': { 'url': thumbnailUrl }
   };
-  console.log(tagStr);
   return embed;
 }
 
