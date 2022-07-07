@@ -111,7 +111,7 @@ async function getRandomManga() {
   const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
   const contentRating = mangaData?.attributes?.contentRating || 'Unknown';
   let tagStr = '';
-  for (const tag of mangaData?.attributes?.tags.slice(0, 10)) {
+  for (const tag of mangaData?.attributes?.tags?.slice(0, 10)) {
     tagStr += `${tag?.attributes?.name?.en}\n`;
   }
 
