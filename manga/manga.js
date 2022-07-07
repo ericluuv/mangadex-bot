@@ -105,13 +105,17 @@ async function getRandomManga() {
   const res = await fetch(url, options);
   const json = await res.json();
   const mangaData = json?.data;
+  if (!mangaData) {
+    console.log("ERROR", res);
+    return;
+  }
   const mangaTitle = await getMangaTitle('', mangaData, false);
   const authorName = await getAuthorName(mangaData, '', false);
   const coverFileName = await getCoverFileName(mangaData);
   const thumbnailUrl = `https://uploads.mangadex.org/covers/${mangaData?.id}/${coverFileName}`;
   const contentRating = mangaData?.attributes?.contentRating || 'Unknown';
   let tagStr = '';
-  for (const tag of mangaData?.attributes?.tags?.slice(0, 10)) {
+  for (const tag of (mangaData?.attributes?.tags?.slice(0, 10) || [])) {
     tagStr += `${tag?.attributes?.name?.en}\n`;
   }
 
