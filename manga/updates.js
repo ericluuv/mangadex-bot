@@ -12,7 +12,7 @@ async function filterUpdates(updates) {
 
     if (existingChapters[chapter] === 1) { toReturn.push(update); }
     else {
-      console.log('Update that was filered out, existing chapter\n', update);
+      console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter]);
     }
   }
   return toReturn;
@@ -21,9 +21,9 @@ async function filterUpdates(updates) {
 
 async function processUpdates(updates) {
   //Returns the updates in an embed format for discord.
-  updates = await filterUpdates(updates);
+  const procUpdates = await filterUpdates(updates);
   const toReturn = [];
-  for (const update of updates) {
+  for (const update of procUpdates) {
     const mangaData = await getMangaData(update);
     const mangaTitle = await getMangaTitle('', mangaData);
     const scanGroup = (await getScanGroup(update)) || 'Unknown Group';

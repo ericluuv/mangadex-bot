@@ -30,10 +30,11 @@ async function pollUpdates(previousUrls) {
     for (const toEmbed of allEmbeds) {
       const url = toEmbed.toSend.url;
       if (!previousUrls.has(url)) {
+        console.log(`Sending: ${toEmbed?.toSend?.title}`);
         newSet.add(url);
         const mangaId = toEmbed.manga_id;
         const users = await getUsersToMention(mangaId, guildId);
-        await bot.channels.cache.get(channelId).send({ 
+        await bot.channels.cache.get(channelId)?.send({ 
           content: `Update for ${users}`, embeds: [toEmbed.toSend]
         });
       }

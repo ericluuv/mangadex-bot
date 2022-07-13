@@ -9,6 +9,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 async function getMangaTitle(mangaId, mangaData = '', update = true) {
   //Queries table for mangaTitle. If not there, gets it from mangadex.
+  if (mangaData) { mangaId = mangaData?.id; }
   if (mangaId) {
     const res = await getMangaDataRow(mangaId);
     if (res?.manga_title) { return res?.manga_title; }
@@ -133,6 +134,5 @@ async function getRandomManga() {
 module.exports = {
   getMangaTitle, aggregateMangaChapters, mapMalData, malIdToMD, getRandomManga
 };
-
 
 
