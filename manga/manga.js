@@ -100,7 +100,8 @@ async function aggregateMangaChapters(mangaId) {
 
 async function getRandomManga() {
   //Returns manga returned from the random endpoint.
-  const url = `${process.env.MANGADEX_URL}/manga/random?includes[]=author&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive`;
+  let url = `${process.env.MANGADEX_URL}/manga/random?includes[]=author&includes[]=cover_art&contentRating[]=safe`;
+  url += '&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic';
   const options = formatOptions('GET');
   await checkLimit();
   const res = await fetch(url, options);

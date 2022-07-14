@@ -12,7 +12,7 @@ async function filterUpdates(updates) {
 
     if (existingChapters[chapter] === 1) { toReturn.push(update); }
     else {
-      console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter]);
+      console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter], chapter);
     }
   }
   return toReturn;

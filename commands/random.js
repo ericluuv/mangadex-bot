@@ -12,7 +12,12 @@ const randomMangaCommand = new SlashCommandBuilder()
 async function handleRandomCommand(interaction) {
   await interaction.deferReply();
   const embed = await getRandomManga();
-  await interaction.editReply({embeds: [embed]});
+  if (embed) {
+    await interaction.editReply({embeds: [embed]});
+  }
+  else {
+    await interaction.editReply({content: 'Mangadex API error'});
+  }
 }
 
 
