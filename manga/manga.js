@@ -78,7 +78,7 @@ async function aggregateMangaChapters(mangaId) {
   const json = await res.json();
   const mangaTitle = await getMangaTitle(mangaId);
   if (json.result === 'ok') {
-    console.log('Aggregated Manga', mangaTitle, json.volumes);
+    console.log('Aggregated Manga', mangaTitle);
     const existingChapters = {};
     for (const volume of Object.values(json?.volumes)) {
       for (const chapterInfo of Object.values(volume?.chapters)) {

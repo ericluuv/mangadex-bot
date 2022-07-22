@@ -24,7 +24,9 @@ async function pollUpdates(previousUrls) {
   for (const row of guildTable) {
     const guildId = row.guild_id, listId = row.list_id, channelId = row.channel_id;
     const updates = await getListUpdates(listId);
-    console.log('Num of updates:', updates.length);
+    if (updates.length > 0) {
+      console.log(`Num of updates: ${updates.length}`);
+    }
     const allEmbeds = await processUpdates(updates);
 
     for (const toEmbed of allEmbeds) {
