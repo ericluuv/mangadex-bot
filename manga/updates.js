@@ -9,10 +9,11 @@ async function filterUpdates(updates) {
     const mangaId = getRelId(update?.relationships, 'manga');
     const existingChapters = await aggregateMangaChapters(mangaId);
     const chapter = update?.attributes?.chapter || '?';
+    console.log("Result after aggregation", existingChapters, chapter);
 
     if (existingChapters[chapter] === 1) { toReturn.push(update); }
     else {
-      console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter], chapter);
+      console.log('Update that was filered out, existing chapter\n', update);
     }
   }
   return toReturn;

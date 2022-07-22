@@ -38,6 +38,9 @@ async function pollUpdates(previousUrls) {
           content: `Update for ${users}`, embeds: [toEmbed.toSend]
         });
       }
+      else {
+        console.log(`Skipping, already sent: ${url}`);
+      }
     }
   }
   setTimeout(function () { pollUpdates(newSet) }, 600000);
