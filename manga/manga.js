@@ -135,5 +135,3 @@ async function getRandomManga() {
 module.exports = {
   getMangaTitle, aggregateMangaChapters, mapMalData, malIdToMD, getRandomManga
 };
-
-

@@ -8,14 +8,14 @@ async function filterUpdates(updates) {
   for (const update of updates) {
     const mangaId = getRelId(update?.relationships, 'manga');
     const existingChapters = await aggregateMangaChapters(mangaId);
-    const chapter = update?.attributes?.chapter || '?';
-    if (chapter === '?') {
+    const chapter = update?.attributes?.chapter;
+    if (typeof (chapter) !== 'string') {
       console.log("Result after aggregation", existingChapters, chapter);
     }
-    if (existingChapters[chapter] === 1) { toReturn.push(update); }
-    else {
+    if (existingChapters[chapter] > 1) {
       console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter], chapter);
     }
+    else { toReturn.push(update); }
   }
   return toReturn;
 }
@@ -54,3 +54,4 @@ async function processUpdates(updates) {
 module.exports = {
   processUpdates
 };
+
