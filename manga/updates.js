@@ -10,12 +10,16 @@ async function filterUpdates(updates) {
     const existingChapters = await aggregateMangaChapters(mangaId);
     const chapter = update?.attributes?.chapter;
     if (typeof (chapter) !== 'string') {
-      console.log("Result after aggregation", existingChapters, chapter);
+      console.log("Chapter Update was not good", chapter);
     }
     if (existingChapters[chapter] > 1) {
       console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter], chapter);
     }
-    else { toReturn.push(update); }
+    else {
+      const mangaTitle = await getMangaTitle(mangaId, null, false);
+      console.log(`${mangaTitle} passing`, existingChapters[chapter], chapter)
+      toReturn.push(update);
+    }
   }
   return toReturn;
 }

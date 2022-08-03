@@ -84,6 +84,9 @@ async function aggregateMangaChapters(mangaId) {
       for (const chapterInfo of Object.values(volume?.chapters)) {
         const chapterNum = chapterInfo.chapter;
         const count = chapterInfo.count;
+        if (typeof(chapterNum) !== 'string' || typeof(count) !== 'number') {
+          console.log('Aggregated Manga got bad results', json)
+        }
         if (chapterNum in existingChapters) {
           existingChapters[chapterNum] += count;
         }
