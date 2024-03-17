@@ -12,7 +12,7 @@ const makeTokensTable = 'CREATE TABLE IF NOT EXISTS dex_tokens ( \
   refresh_token TEXT,         \
   session_date BIGINT,        \
   refresh_date BIGINT         \
-  )';
+  );';
 
 //Guilds Table
 const makeGuildsTable = 'CREATE TABLE IF NOT EXISTS guilds ( \
@@ -20,7 +20,7 @@ const makeGuildsTable = 'CREATE TABLE IF NOT EXISTS guilds ( \
   list_id TEXT,           \
   channel_id TEXT,        \
   PRIMARY KEY (guild_id)  \
-  )';
+  );';
 
 //Following Table
 const makeFollowsTable = 'CREATE TABLE IF NOT EXISTS follows ( \
@@ -29,20 +29,21 @@ const makeFollowsTable = 'CREATE TABLE IF NOT EXISTS follows ( \
   guild_id TEXT,                   \
   PRIMARY KEY (user_id, manga_id, guild_id), \
   FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE \
-  )';
+  );';
 
 const makeLimitTable = 'CREATE TABLE IF NOT EXISTS limits ( \
   row_key BIGINT PRIMARY KEY, \
   usage BIGINT, \
   refresh_time BIGINT \
-  )';
+  );';
 
-const makeMangaTable = 'CREATE TABLE IF NOT EXISTS manga_data ( \
+const makeMangaTable = `CREATE TABLE IF NOT EXISTS manga_data ( \
   manga_id TEXT, \
   manga_title TEXT, \
   author_name TEXT, \
-  PRIMARY KEY (manga_id) \
-  )';
+  PRIMARY KEY (manga_id), \
+  CHECK (manga_id != '') \
+  );`;
 
 
 async function createTables() {

@@ -1,6 +1,8 @@
 const { checkLimit, getMangaDataRow, updateAuthorName } = require('../postgres/psExport.js');
 const { formatOptions } = require('../options.js');
 const fetch = require('node-fetch');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 
 function getRelId(relationships, type) {
@@ -9,6 +11,13 @@ function getRelId(relationships, type) {
     id = types.type === type ? types.id : id;
   }
   return id;
+}
+
+function getRelAttr(relationships, type) {
+  //Grabs the attributes from the relationships returned in certain mangadex API calls.
+  for (const rels of (relationships || [])) {
+    if (rels?.type === type) { return rels?.attributes; }
+  }
 }
 
 
@@ -21,7 +30,7 @@ async function getMangaData(update, id = '') {
       return;
     }
   }
-  const url = `${process.env.MANGADEX_URL}/manga/${id}`;
+  const url = `${process.env.MANGADEX_URL}/manga/${id}?&includes[]=author&includes[]=cover_art`;
   const options = formatOptions('GET');
 
   await checkLimit();
@@ -33,73 +42,39 @@ async function getMangaData(update, id = '') {
 
 
 async function getScanGroup(update) {
-  //Grabs scanlation group name from relationships attribute, null if no value.
-  const id = getRelId(update?.relationships, 'scanlation_group');
-  if (id === '') {
-    console.log('No suitable id found in getScanGroup', update);
-    return;
-  }
-
-  const url = `${process.env.MANGADEX_URL}/group/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options).catch(err => console.log(err));
-  const json = await res.json();
-  if (json.result === 'ok') { return json.data?.attributes?.name; }
-  else { console.log(`URL: ${url} failed`, json); }
-
+  //Grabs scanlation group name from relationships attribute.
+  const attr = getRelAttr(update?.relationships, 'scanlation_group');
+  if (attr) { return attr?.name; }
+  else { console.log('Error in getScanGroup', update); }
 }
 
 
 async function getCoverFileName(mangaData) {
-  //Gets mangaData from update.
-  const id = getRelId(mangaData?.relationships, 'cover_art');
-  if (id === '') {
-    console.log('No suitable id found in getCoverFileName', mangaData);
-    return;
-  }
-
-  const url = `${process.env.MANGADEX_URL}/cover/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options);
-  const json = await res.json();
-  if (json.result === 'ok') { return json.data?.attributes?.fileName; }
-  else { console.log(`URL: ${url} failed`, json); }
+  //Gets coverFileName from mangaData.
+  const attr = getRelAttr(mangaData?.relationships, 'cover_art');
+  if (attr) { return attr?.fileName; }
+  else { console.log('Error in getCoverFileName', mangaData); }
 }
 
 
-async function getAuthorName(mangaData, mangaId = '') {
+async function getAuthorName(mangaData, mangaId = '', update=true) {
   //Gets author name from the mangaData.
-  if (mangaData && !mangaId) { mangaId = mangaData?.id; }
-  const queryRes = await getMangaDataRow(mangaId);
-  if (queryRes?.author_name) { return queryRes?.author_name; }
-  mangaData = await getMangaData('', mangaId);
-
-  const id = getRelId(mangaData?.relationships, 'author');
-  if (id === '') {
-    console.log('No suitable id found in getAuthorName', mangaData);
-    return;
+  if (mangaId) {
+    const queryRes = await getMangaDataRow(mangaId);
+    if (queryRes?.author_name) { return queryRes?.author_name; }
   }
+  if (!mangaData) { mangaData = await getMangaData('', mangaId); }
+  mangaId = mangaData?.id;
 
-  const url = `${process.env.MANGADEX_URL}/author/${id}`;
-  const options = formatOptions('GET');
-
-  await checkLimit();
-  const res = await fetch(url, options).catch(err => console(err));
-  const json = await res.json();
-  if (json.result === 'ok') {
-    const authorName = json.data?.attributes?.name || 'Unknown Author';
-    await updateAuthorName(mangaId, authorName);
-    return authorName;
+  const attr = getRelAttr(mangaData?.relationships, 'author');
+  if (attr) {
+    if (update) { await updateAuthorName(mangaId, attr?.name || 'Unknown Author'); }
+    return attr?.name;
   }
-  else { console.log(`URL: ${url} failed`, json); }
+  else { console.log('Error in getAuthorName', mangaData, mangaId); }
 }
-
 
 
 module.exports = {
-  getScanGroup, getAuthorName, getCoverFileName, getRelId, getMangaData
+  getScanGroup, getAuthorName, getCoverFileName, getRelId, getMangaData, getRelAttr
 };

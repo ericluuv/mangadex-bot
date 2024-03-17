@@ -8,11 +8,17 @@ async function filterUpdates(updates) {
   for (const update of updates) {
     const mangaId = getRelId(update?.relationships, 'manga');
     const existingChapters = await aggregateMangaChapters(mangaId);
-    const chapter = update?.attributes?.chapter || '?';
-
-    if (existingChapters[chapter] === 1) { toReturn.push(update); }
+    const chapter = update?.attributes?.chapter;
+    if (typeof (chapter) !== 'string') {
+      console.log("Chapter Update was not good", chapter);
+    }
+    if (existingChapters[chapter] > 1) {
+      console.log('Update that was filered out, existing chapter\n', update, existingChapters[chapter], chapter);
+    }
     else {
-      console.log('Update that was filered out, existing chapter\n', update);
+      const mangaTitle = await getMangaTitle(mangaId, null, false);
+      console.log(`${mangaTitle} passing`, existingChapters[chapter], chapter)
+      toReturn.push(update);
     }
   }
   return toReturn;
@@ -21,11 +27,11 @@ async function filterUpdates(updates) {
 
 async function processUpdates(updates) {
   //Returns the updates in an embed format for discord.
-  updates = await filterUpdates(updates);
+  const procUpdates = await filterUpdates(updates);
   const toReturn = [];
-  for (const update of updates) {
+  for (const update of procUpdates) {
     const mangaData = await getMangaData(update);
-    const mangaTitle = await getMangaTitle(mangaData?.id);
+    const mangaTitle = await getMangaTitle('', mangaData);
     const scanGroup = (await getScanGroup(update)) || 'Unknown Group';
     const authorName = await getAuthorName(mangaData, mangaData?.id);
     const coverFileName = await getCoverFileName(mangaData);
@@ -52,3 +58,4 @@ async function processUpdates(updates) {
 module.exports = {
   processUpdates
 };
+

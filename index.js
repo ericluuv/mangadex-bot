@@ -8,10 +8,7 @@ const bot = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_PR
 bot.login(process.env.DISCORD_TOKEN);
 
 //Commands
-const {
-  createCommands, handleFollowCommand, handleUnfollowCommand,
-  handleSetCommand, handleListCommand, handleMigrateCommand
-} = require('./commands.js');
+const {createCommands, commands, jarvis} = require('./commands/command-handler.js');
 
 // postgreSQL 
 const { createTables, getGuildTable, getUsersToMention } = require('./postgres/psExport.js');
@@ -27,18 +24,24 @@ async function pollUpdates(previousUrls) {
   for (const row of guildTable) {
     const guildId = row.guild_id, listId = row.list_id, channelId = row.channel_id;
     const updates = await getListUpdates(listId);
-    console.log('Num of updates:', updates.length);
+    if (updates.length > 0) {
+      console.log(`Num of updates: ${updates.length}`);
+    }
     const allEmbeds = await processUpdates(updates);
 
     for (const toEmbed of allEmbeds) {
       const url = toEmbed.toSend.url;
       if (!previousUrls.has(url)) {
+        console.log(`Sending: ${toEmbed?.toSend?.title}`);
         newSet.add(url);
         const mangaId = toEmbed.manga_id;
         const users = await getUsersToMention(mangaId, guildId);
-        await bot.channels.cache.get(channelId).send({ 
+        await bot.channels.cache.get(channelId)?.send({ 
           content: `Update for ${users}`, embeds: [toEmbed.toSend]
         });
+      }
+      else {
+        console.log(`Skipping, already sent: ${url}`);
       }
     }
   }
@@ -56,27 +59,19 @@ bot.on('ready', async () => {
 });
 
 
+bot.on('messageCreate', async (msg) => {
+  const text = msg.content.toLowerCase().trim()
+  const re = /jarvis,?\s+follow\s+.+/;
+  if (text.search(re) >= 0) {
+    await jarvis(msg, text);
+  }
+});
+
+
+
 bot.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
-  if (interaction.commandName === 'follow') {
-    await handleFollowCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'unfollow') {
-    await handleUnfollowCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'set') {
-    await handleSetCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'list') {
-    await handleListCommand(interaction);
-  }
-
-  else if (interaction.commandName === 'migrate') {
-    await handleMigrateCommand(interaction);
-  }
+  await commands[interaction.commandName](interaction);
 });
 

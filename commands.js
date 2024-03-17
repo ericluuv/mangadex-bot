@@ -53,7 +53,7 @@ const migrateCommand = new SlashCommandBuilder()
 
 const commands = [followCommand, unfollowCommand, setChannelCommands, listMangaCommands, migrateCommand];
 
-const global_url = `https://discord.com/api/v8/applications/${process.env.APPLICATION_ID}/commands`;
+const global_url = `https://discord.com/api/v10/applications/${process.env.APPLICATION_ID}/commands`;
 
 
 async function getCurrentCommands() {
