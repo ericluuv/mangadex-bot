@@ -1,4 +1,4 @@
-const { getGuildRow } = require('.././postgres/psExport.js');
+const { getGuildRow } = require('../postgres/psExport.js');
 const { malIdToMD } = require('../manga/mgExport.js');
 
 async function checkGuild(interaction, guild_id='') {

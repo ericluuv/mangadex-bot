@@ -24,20 +24,26 @@ const commands = {
 async function getCurrentCommands() {
   //Gets names of all global commands.
   const options = formatOptions('GET', `Bot ${process.env.DISCORD_TOKEN}`);
-
   const res = await fetch(global_url, options).catch(err => console.log(err));
   const json = await res.json();
   return json.map(command => command.name);
 }
 
 
+
+
 async function createCommands() {
   //Creates commands if they are not already made.
   const currents = await getCurrentCommands();
+  console.log(currents)
   for (const command of commandArr) {
-    if (currents.includes(command.name)) { continue; }
+    if (currents.includes(command.name)) {
+      console.log(`This command that is already created ${command.name}`) 
+      continue; 
+    }
     const options = formatOptions('POST', `Bot ${process.env.DISCORD_TOKEN}`, command.toJSON());
     const response = await fetch(global_url, options);
+    setTimeout(function() {}, 3000);
     console.log(await response.json());
   }
   console.log('Commands created');
